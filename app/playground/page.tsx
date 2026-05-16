@@ -1,421 +1,434 @@
-// src/app/playground/page.tsx
 'use client';
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import {
   AlertCircle,
-  ChevronDown,
-  Keyboard,
   Mic,
   Plus,
-  SendHorizontal,
-  Sparkles,
+  ArrowUp,
   Square,
-  Type,
+  Keyboard,
+  Sun,
+  Moon,
+  Sparkles,
+  ChevronDown
 } from 'lucide-react';
 import { useStream } from '../hooks/useStream';
 import { useAudioRecord } from '../hooks/useAudioRecord';
 
-type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-};
+type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; };
+function createMessageId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
-function createMessageId() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+// ─── GLOBAL STYLES & ANIMATIONS ────────────────────────────────────────────────
+const GlobalStyles = () => (
+  <style dangerouslySetInnerHTML={{__html: `
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&display=swap');
+
+    @keyframes orbSpin    { to { transform:rotate(360deg) } }
+    @keyframes orbRest    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+    @keyframes orbThink   { 0%,100%{transform:scale(1.1)} 50%{transform:scale(1.18)} }
+    @keyframes orbExit    { to { transform:scale(0.3); opacity:0 } }
+    @keyframes ringPulse  { 0%{box-shadow:0 0 0 0 rgba(249,115,22,0.35)} 70%{box-shadow:0 0 0 10px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+    @keyframes dotBounce  { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
+    @keyframes cursorBlink{ 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes fadeUp     { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes slideIn    { from{opacity:0;transform:translateX(4px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes statusGlow { 0%,100%{opacity:0.5} 50%{opacity:1} }
+  `}} />
+);
+
+// ─── IDLE HERO ────────────────────────────────────────────────────────────────
+const CHIPS = [
+  { icon: "≡", text: "Summarize a topic" },
+  { icon: "◎", text: "Translate to Hindi" },
+  { icon: "✦", text: "Explain a concept" },
+  { icon: "↗", text: "Draft an email" },
+];
+
+function IdleHero({ onChip }: { onChip: (text: string) => void }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden gap-6 -mt-12">
+      {/* user requested: remove the gradient in the top - Orb div removed from here */}
+      
+      <div className="text-center relative animate-[fadeUp_0.4s_ease]">
+        <h1 className="font-['Geist'] text-[26px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.03em] mb-2 leading-[1.2]">How can I help you today?</h1>
+        <p className="font-['Geist_Mono'] text-[11px] text-[#71717a] tracking-[0.02em]">sarvam-m · multilingual · 22+ languages</p>
+      </div>
+      <div className="flex gap-2 flex-wrap justify-center max-w-[440px] relative">
+        {CHIPS.map((c, i) => (
+          <button 
+            key={i} 
+            onClick={() => onChip(c.text)} 
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-black/5 dark:border-white/10 bg-[#fafafa] dark:bg-[#18181b] text-[#71717a] text-xs cursor-pointer font-['Geist'] transition-all hover:border-black/10 dark:hover:border-white/20 hover:text-[#09090b] dark:hover:text-[#fafafa] hover:bg-[#f4f4f5] dark:hover:bg-[#1c1c1f] tracking-[-0.01em] shadow-sm"
+            style={{ animation: `fadeUp ${0.3 + i * 0.06}s ease` }}
+          >
+            <span className="text-[11px] opacity-65">{c.icon}</span>{c.text}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
+// ─── THINKING PERSONA ─────────────────────────────────────────────────────────
+function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'streaming'|'done', streamedText: string }) {
+  const isThinking  = state === "thinking";
+  const isStreaming  = state === "streaming";
+  const showOrb     = state !== "done";
+  const showDots    = isThinking;
+  const showText    = isStreaming || state === "done";
+  const showCursor  = isStreaming;
+  const showRing    = isThinking;
+
+  const orbAnim = isThinking ? "animate-[orbThink_0.9s_ease-in-out_infinite]" : isStreaming || state === "done" ? "animate-[orbExit_0.3s_ease_forwards]" : "animate-[orbRest_3.5s_ease-in-out_infinite]";
+  const spinSpeed = isThinking ? "0.8s" : state === "idle" ? "4.5s" : "1.8s";
+
+  return (
+    <div className="flex gap-2.5 items-start animate-[fadeUp_0.2s_ease]">
+      {/* Orb */}
+      <div className="w-7 h-7 shrink-0 relative">
+        {showOrb && (
+          <div className={`w-7 h-7 rounded-full overflow-hidden relative ${orbAnim}`}>
+            <div className="absolute inset-0" style={{ background: "conic-gradient(from 0deg,#f97316 0%,#a855f7 25%,#3b82f6 50%,#10b981 75%,#f97316 100%)", animation: `orbSpin ${spinSpeed} linear infinite` }} />
+            <div className="absolute top-[3px] left-[3px] right-[3px] bottom-[3px] rounded-full bg-white dark:bg-[#0f0f12] flex items-center justify-center">
+              <div className="w-3 h-3 rounded-full transition-opacity duration-400" style={{ background: "conic-gradient(from 0deg,#f97316,#3b82f6,#f97316)", opacity: isThinking ? 1 : 0.35, animation: `orbSpin ${isThinking ? "0.55s" : "2.2s"} linear infinite` }} />
+            </div>
+          </div>
+        )}
+        {showRing && <div className="absolute -inset-[5px] rounded-full pointer-events-none animate-[ringPulse_1.1s_ease-out_infinite]" />}
+      </div>
+
+      {/* Bubble */}
+      <div className={`bg-[#fafafa] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[3px_12px_12px_12px] text-sm leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] max-w-[78%] animate-[fadeIn_0.18s_ease] tracking-[-0.01em] shadow-sm ${showDots ? 'px-4 py-[11px] min-w-[68px]' : 'px-4 py-2.5'}`}>
+        {showDots && (
+          <div className="flex gap-[5px] items-center h-[18px]">
+            {[0, 140, 280].map(d => <div key={d} className="w-[5px] h-[5px] rounded-full bg-[#71717a] opacity-60" style={{ animation: "dotBounce 1.2s ease-in-out infinite", animationDelay: `${d}ms` }} />)}
+          </div>
+        )}
+        {showText && <span>{streamedText}{showCursor && <span className="inline-block w-0.5 h-[13px] bg-[#f97316] ml-1 align-middle animate-[cursorBlink_0.75s_ease_infinite]" />}</span>}
+      </div>
+    </div>
+  );
+}
+
+// ─── RIGHT SIDEBAR (METRICS) ──────────────────────────────────────────────────
+function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, onClearError }: any) {
+  const statusState = isThinking ? "thinking" : isStreaming ? "streaming" : "idle";
+  const statusColor = isThinking ? "#f97316" : isStreaming ? "#22c55e" : "#71717a";
+
+  const MRow = ({ label, value, mono, accent, live }: any) => (
+    <div className="flex items-center justify-between py-1.5 border-b border-black/5 dark:border-white/10 last:border-0">
+      <span className="font-['Geist'] text-xs text-[#71717a] tracking-[-0.01em]">{label}</span>
+      <div className="flex items-center gap-1.5">
+        {live && (isStreaming || isThinking) && <div className="w-[5px] h-[5px] rounded-full animate-[statusGlow_1s_ease_infinite]" style={{ background: statusColor }} />}
+        <span className={`text-xs font-medium transition-all ${mono ? "font-['Geist_Mono'] tracking-normal" : "font-['Geist'] tracking-[-0.01em]"} ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
+          {value}
+        </span>
+      </div>
+    </div>
+  );
+
+  const Section = ({ title, children }: any) => (
+    <div className="mb-5">
+      <div className="font-['Geist'] text-[11px] font-medium text-[#71717a] tracking-[-0.01em] mb-2">{title}</div>
+      <div className="bg-[#f4f4f5] dark:bg-[#0f0f12] border border-black/5 dark:border-white/10 rounded-[10px] px-3 py-0.5 overflow-hidden shadow-sm">
+        {children}
+      </div>
+    </div>
+  );
+
+  const BigMetric = ({ label, value, unit, accent }: any) => (
+    <div className="bg-[#f4f4f5] dark:bg-[#0f0f12] border border-black/5 dark:border-white/10 rounded-[10px] p-[12px_14px] shadow-sm">
+      <div className="font-['Geist'] text-[11px] text-[#71717a] mb-1.5 tracking-[-0.01em]">{label}</div>
+      <div className="flex items-baseline gap-1">
+        <span className={`font-['Geist_Mono'] text-2xl font-medium tracking-[-0.03em] transition-all ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
+          {value}
+        </span>
+        {unit && <span className="font-['Geist_Mono'] text-[11px] text-[#71717a]">{unit}</span>}
+      </div>
+    </div>
+  );
+
+  return (
+    <aside className="w-[240px] shrink-0 border-l border-black/5 dark:border-white/10 bg-[#fafafa] dark:bg-[#09090b] flex flex-col h-full overflow-hidden">
+      <div className="p-[14px_16px_12px] border-b border-black/5 dark:border-white/10 flex items-center justify-between">
+        <span className="font-['Geist'] text-[13px] font-medium text-[#09090b] dark:text-[#fafafa] tracking-[-0.01em]">Inspector</span>
+        <div className="flex items-center gap-1.5 font-['Geist_Mono'] text-[10px] bg-[#f4f4f5] dark:bg-[#27272a] px-2 py-[3px] rounded-md shadow-sm" style={{ color: statusColor }}>
+          <div className={`w-[5px] h-[5px] rounded-full ${isStreaming || isThinking ? 'animate-[statusGlow_1s_ease_infinite]' : ''}`} style={{ background: statusColor }} />
+          {statusState}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4">
+        <Section title="Persona">
+          <MRow label="State" value={statusState} mono accent={isThinking || isStreaming} live />
+          <MRow label="Mode"  value={mode} mono />
+          <MRow label="Model" value={model} mono />
+        </Section>
+
+        <div className="mb-5">
+          <div className="font-['Geist'] text-[11px] font-medium text-[#71717a] tracking-[-0.01em] mb-2">Live metrics</div>
+          <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+            <BigMetric label="Tokens" value={metrics.tokens > 0 ? metrics.tokens : "—"} accent={metrics.tokens > 0} />
+            <BigMetric label="Tok/sec" value={metrics.tps > 0 ? metrics.tps : "—"} unit={metrics.tps > 0 ? "t/s" : ""} accent={metrics.tps > 0} />
+          </div>
+          <BigMetric label="Elapsed" value={metrics.elapsed > 0 ? metrics.elapsed : "—"} unit={metrics.elapsed > 0 ? "s" : ""} />
+        </div>
+
+        <Section title="Runtime">
+          <MRow label="Provider"  value="Sarvam AI" mono={false} />
+          <MRow label="Context"   value="32k ctx"   mono />
+          <MRow label="Latency"   value="~80ms"     mono />
+          <MRow label="Languages" value="22+ langs" mono={false} />
+        </Section>
+
+        <Section title="Endpoint">
+          <MRow label="Base"   value="api.sarvam.ai" mono />
+          <MRow label="Route"  value="/v1/chat" mono />
+          <MRow label="Stream" value="SSE" mono />
+        </Section>
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[10px] p-[10px_12px] mb-4 animate-[slideIn_0.2s_ease]">
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="font-['Geist_Mono'] text-[10px] text-red-500 font-medium tracking-wide">Error</span>
+              <button onClick={onClearError} className="text-red-500 hover:text-red-600 cursor-pointer text-[15px] leading-none">×</button>
+            </div>
+            <div className="font-['Geist'] text-[11px] text-red-600 dark:text-red-400 leading-[1.6] opacity-90">{error}</div>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function Playground() {
   const [inputMode, setInputMode] = useState<'text' | 'audio'>('text');
   const [promptText, setPromptText] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [elapsedMs, setElapsedMs] = useState(0);
+  
+  const { theme, setTheme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const { setOutput, isStreaming, error, metrics, startStream, stopStream } = useStream();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollFrameRef = useRef<number | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const lastMsg = messages[messages.length - 1];
+  const isThinking = isStreaming && (!lastMsg || lastMsg.role !== 'assistant' || !lastMsg.content);
+  const personaState = isThinking ? 'thinking' : isStreaming ? 'streaming' : 'idle';
+
+  useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, isStreaming]);
 
   useEffect(() => {
-    const hydrationTimer = window.setTimeout(() => {
-      const savedPrompt = localStorage.getItem('sarvam_prompt');
-      const savedMessages = localStorage.getItem('sarvam_messages');
-
-      if (savedPrompt) setPromptText(savedPrompt);
-
-      if (savedMessages) {
-        try {
-          const parsedMessages = JSON.parse(savedMessages) as ChatMessage[];
-          const validMessages = parsedMessages.filter(
-            (message) =>
-              (message.role === 'user' || message.role === 'assistant') &&
-              typeof message.content === 'string' &&
-              typeof message.id === 'string'
-          );
-
-          setMessages(validMessages);
-          const latestAssistantMessage = [...validMessages].reverse().find((message) => message.role === 'assistant');
-          if (latestAssistantMessage) setOutput(latestAssistantMessage.content);
-        } catch {
-          localStorage.removeItem('sarvam_messages');
-        }
-      }
-    }, 0);
-
-    return () => window.clearTimeout(hydrationTimer);
-  }, [setOutput]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      localStorage.setItem('sarvam_prompt', promptText);
-    }, 500);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [promptText]);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      if (messages.length === 0) {
-        localStorage.removeItem('sarvam_messages');
-        return;
-      }
-
-      localStorage.setItem('sarvam_messages', JSON.stringify(messages));
-    }, isStreaming ? 500 : 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [messages, isStreaming]);
-
-  useEffect(() => {
-    if (scrollFrameRef.current !== null) {
-      window.cancelAnimationFrame(scrollFrameRef.current);
-    }
-
-    scrollFrameRef.current = window.requestAnimationFrame(() => {
-      scrollRef.current?.scrollIntoView({ block: 'end' });
-      scrollFrameRef.current = null;
-    });
-
-    return () => {
-      if (scrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
-    };
-  }, [messages]);
-
-  useEffect(() => {
-    if (!isStreaming || metrics.startTime === 0) {
-      return;
-    }
-
-    const updateElapsed = () => setElapsedMs(performance.now() - metrics.startTime);
-    updateElapsed();
-    const intervalId = window.setInterval(updateElapsed, 400);
-
-    return () => window.clearInterval(intervalId);
+    if (!isStreaming || metrics.startTime === 0) return;
+    const interval = window.setInterval(() => setElapsedMs(performance.now() - metrics.startTime), 100);
+    return () => window.clearInterval(interval);
   }, [isStreaming, metrics.startTime]);
 
-  const handleSubmit = () => {
-    if (!promptText.trim() || isStreaming) return;
-
-    const userMessage: ChatMessage = {
-      id: createMessageId(),
-      role: 'user',
-      content: promptText.trim(),
-    };
-    const assistantMessage: ChatMessage = {
-      id: createMessageId(),
-      role: 'assistant',
-      content: '',
-    };
+  const handleSubmit = (overrideText?: string) => {
+    const textToSend = overrideText || promptText;
+    if (!textToSend.trim() || isStreaming) return;
+    const userMessage: ChatMessage = { id: createMessageId(), role: 'user', content: textToSend.trim() };
+    const assistantMessage: ChatMessage = { id: createMessageId(), role: 'assistant', content: '' };
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
+    setPromptText(''); setElapsedMs(0); setOutput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    
     const apiMessages = [...messages, userMessage].map(({ role, content }) => ({ role, content }));
-
-    setMessages((currentMessages) => [...currentMessages, userMessage, assistantMessage]);
-    setPromptText('');
-    setElapsedMs(0);
-    setOutput('');
     void startStream(apiMessages, {
       onToken: (token) => {
-        setMessages((currentMessages) =>
-          currentMessages.map((message) =>
-            message.id === assistantMessage.id
-              ? {
-                  ...message,
-                  content: message.content + token,
-                }
-              : message
-          )
-        );
+        setMessages(current => current.map(m => m.id === assistantMessage.id ? { ...m, content: m.content + token } : m));
       },
     });
   };
 
-  const handleTranscriptionComplete = useCallback((transcript: string) => {
-    setPromptText(transcript);
-    setInputMode('text');
-  }, []);
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPromptText(e.target.value);
+    e.target.style.height = "auto"; 
+    e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
+  };
 
-  const { startRecording, stopRecording, isRecording, isTranscribing, audioError } =
-    useAudioRecord(handleTranscriptionComplete);
+  const { startRecording, stopRecording, isRecording, isTranscribing, audioError } = useAudioRecord((transcript) => {
+    setPromptText(transcript); setInputMode('text');
+  });
 
   const secondsElapsed = elapsedMs / 1000;
-  const speed =
-    metrics.tokenCount > 0 && secondsElapsed > 0 ? `${(metrics.tokenCount / secondsElapsed).toFixed(2)} tok/s` : '--';
-  const latency = metrics.startTime > 0 && elapsedMs > 0 ? `${secondsElapsed.toFixed(1)} s` : '--';
-  const sessionState = isStreaming ? 'Live' : messages.length > 0 ? `${Math.ceil(messages.length / 2)} turns` : 'New';
-  const statusText = isStreaming ? 'Generating' : messages.length > 0 ? 'Ready' : 'Inactive';
+  const speed = metrics.tokenCount > 0 && secondsElapsed > 0 ? `${(metrics.tokenCount / secondsElapsed).toFixed(1)}` : '—';
+  const latency = metrics.startTime > 0 && elapsedMs > 0 ? `${secondsElapsed.toFixed(2)}` : '—';
+  const currentTheme = mounted && theme === 'system' ? systemTheme : theme;
+  const canSend = promptText.trim() && !isStreaming && !isThinking;
 
   return (
-    <div className="h-screen overflow-hidden bg-white p-3 dark:bg-[#07080a] sm:p-4">
-      <section className="relative h-[calc(100vh-1.5rem)] overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_18px_64px_rgba(15,23,42,0.09)] ring-1 ring-slate-900/[0.03] dark:border-white/10 dark:bg-[#101216] dark:shadow-[0_18px_64px_rgba(0,0,0,0.55)] dark:ring-white/5 sm:h-[calc(100vh-2rem)]">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(105deg,rgba(255,166,73,0.45),rgba(255,119,138,0.16),rgba(112,112,255,0.28))] dark:bg-[linear-gradient(105deg,rgba(73,68,255,0.5),rgba(178,74,190,0.25),rgba(255,96,12,0.45))]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(107,114,255,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.84))] dark:bg-[radial-gradient(circle_at_70%_10%,rgba(124,116,255,0.16),transparent_30%),linear-gradient(180deg,rgba(16,18,22,0.98),rgba(10,12,16,0.9))]" />
+    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#09090b] font-sans">
+      <GlobalStyles />
+      
+      {/* ─── CENTER CHAT AREA ──────────────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0f0f12]">
+        
+        {/* Header */}
+        <header className="h-[50px] px-5 border-b border-black/5 dark:border-white/10 flex items-center justify-between shrink-0 bg-[#fafafa] dark:bg-[#09090b]">
+          <div className="flex items-center gap-2.5">
+            <span className="font-['Geist'] text-sm font-medium text-[#09090b] dark:text-[#fafafa] tracking-[-0.02em]">Inference Playground</span>
+            <span className="font-['Geist_Mono'] text-[10px] text-[#71717a] bg-[#f4f4f5] dark:bg-[#27272a] px-2 py-[2px] rounded-[5px]">Stream · Metrics · Multi-modal</span>
+          </div>
+          <div className="flex gap-1.5 items-center">
+            {["Docs", "Feedback"].map(b => (
+              <button key={b} className="px-3 py-[5px] rounded-[7px] border border-black/5 dark:border-white/10 bg-transparent text-[#71717a] text-xs cursor-pointer font-['Geist'] tracking-[-0.01em] transition-all hover:border-black/10 dark:hover:border-white/20 hover:text-[#09090b] dark:hover:text-[#fafafa]">
+                {b}
+              </button>
+            ))}
+            {mounted && (
+              <button 
+                onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
+                className="w-[28px] h-[28px] flex items-center justify-center rounded-[7px] border border-black/5 dark:border-white/10 text-[#71717a] hover:text-[#09090b] dark:hover:text-[#fafafa] hover:border-black/10 dark:hover:border-white/20 transition-all ml-1"
+              >
+                {currentTheme === 'dark' ? <Sun className="w-[14px] h-[14px]" /> : <Moon className="w-[14px] h-[14px]" />}
+              </button>
+            )}
+          </div>
+        </header>
 
-        <div className="relative z-10 flex h-full min-h-0 flex-col">
-          <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200/80 px-5 py-4 dark:border-white/10 sm:px-7">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Playground</h1>
-              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
-                Test model responses in real time with text or voice input.
-              </p>
+        {/* Chat Area */}
+        <div className="flex-1 overflow-y-auto p-5 flex flex-col relative">
+          {messages.length === 0 && !isStreaming ? (
+            <IdleHero onChip={handleSubmit} />
+          ) : (
+            <div className="flex flex-col gap-4 max-w-4xl mx-auto w-full pb-6">
+              {messages.map((m, i) => {
+                const isLastStreaming = isStreaming && i === messages.length - 1;
+                if (m.role === 'user') {
+                  return (
+                    <div key={m.id} className="flex gap-2 flex-row-reverse items-start animate-[fadeUp_0.18s_ease]">
+                      <div className="w-[26px] h-[26px] rounded-full shrink-0 bg-[linear-gradient(135deg,#2563eb,#f97316)] flex items-center justify-center shadow-sm">
+                        <span className="font-['Geist'] text-[9px] font-semibold text-white">U</span>
+                      </div>
+                      <div className="max-w-[76%] bg-[#f4f4f5] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[12px_12px_3px_12px] px-[14px] py-[9px] text-[14px] leading-[1.7] text-[#09090b] dark:text-[#fafafa] font-['Geist'] tracking-[-0.01em] shadow-sm">
+                        {m.content}
+                      </div>
+                    </div>
+                  );
+                }
+                if (isLastStreaming) return <ThinkingPersona key={m.id} state={personaState} streamedText={m.content} />;
+                return (
+                  <div key={m.id} className="flex gap-2 items-start animate-[fadeUp_0.18s_ease]">
+                    <div className="w-[26px] h-[26px] rounded-full overflow-hidden shrink-0 shadow-sm">
+                      <div className="w-full h-full bg-[conic-gradient(from_0deg,#f97316,#a855f7,#3b82f6,#10b981,#f97316)]" />
+                    </div>
+                    <div className="max-w-[78%] text-[14px] leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] py-[2px] tracking-[-0.01em] whitespace-pre-wrap">
+                      {m.content}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={scrollRef} className="h-4" />
             </div>
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#8578ff] via-[#c46bff] to-[#ff8a4b] text-xs font-bold text-white shadow-lg shadow-violet-200">
-              SU
-            </div>
-          </header>
+          )}
+        </div>
 
-          <div className="shrink-0 px-5 pt-4 sm:px-7">
-            <div className="grid gap-3 rounded-2xl border border-slate-200/80 bg-white/76 p-3.5 shadow-[0_12px_34px_rgba(15,23,42,0.05)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045] dark:shadow-[0_12px_34px_rgba(0,0,0,0.25)] sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_1.1fr]">
-              <Metric label="Tokens" value={metrics.tokenCount > 0 ? String(metrics.tokenCount) : '--'} />
-              <Metric label="Speed" value={speed} />
-              <Metric label="Latency" value={latency} />
-              <Metric label="Session" value={sessionState} />
-              <div className="flex items-center gap-2 border-slate-200 dark:border-white/10 xl:border-l xl:pl-6">
-                <span className={`h-2 w-2 rounded-full ${isStreaming ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                <span className="text-xs font-medium text-slate-700 dark:text-slate-200">{statusText}</span>
+        {/* ─── ENHANCED INPUT BOX ─── */}
+        <div className="relative px-4 pb-8 pt-2 shrink-0 max-w-4xl mx-auto w-full z-10 mb-4">
+          
+          {/* Glowing Gradient Background - Stronger opacity and larger range */}
+          <div className="absolute bottom-[-20px] left-[-20px] right-[-20px] h-[160px] bg-gradient-to-r from-blue-600/50 via-purple-600/70 to-orange-500/70 dark:from-blue-600/60 dark:via-purple-600/80 dark:to-orange-500/80 blur-[60px] -z-10 pointer-events-none rounded-full transition-opacity duration-500" />
+          
+          <div className="bg-[#fafafa] dark:bg-[#18181b] border border-black/10 dark:border-white/10 rounded-[32px] transition-colors shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:border-black/20 dark:focus-within:border-white/20 flex flex-col overflow-hidden">
+            
+            {/* Top Textarea Section */}
+            <div className="px-5 pt-4 pb-1">
+              {inputMode === 'text' ? (
+                <textarea
+                  ref={textareaRef}
+                  value={promptText}
+                  onChange={handleInput}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
+                  placeholder="Ask anything..."
+                  className="w-full resize-none bg-transparent outline-none text-[15px] leading-[1.65] font-['Geist'] text-[#09090b] dark:text-[#fafafa] placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] min-h-[32px] max-h-[128px] caret-[#f97316] tracking-[-0.01em]"
+                  disabled={isStreaming || isThinking}
+                  rows={1}
+                />
+              ) : (
+                <div className="h-[32px] flex items-center text-[15px] font-['Geist'] tracking-[-0.01em]">
+                  {audioError ? <span className="text-red-500">{audioError}</span> : isTranscribing ? <span className="text-blue-500 font-medium">Transcribing audio...</span> : isRecording ? <span className="text-red-500 animate-pulse flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500" /> Recording...</span> : <span className="text-[#a1a1aa] dark:text-[#52525b]">Recording audio... tap mic to stop</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Toolbar Section */}
+            <div className="px-3 pb-3 flex items-center justify-between">
+              
+              {/* Left Side: Plus Icon & Helper Text */}
+              <div className="flex items-center gap-3 pl-1">
+                <button className="w-9 h-9 rounded-full border border-black/5 dark:border-white/5 flex items-center justify-center text-[#71717a] dark:text-[#a1a1aa] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  <Plus className="w-4.5 h-4.5" />
+                </button>
+                <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] font-['Geist'] hidden sm:inline-block select-none opacity-80">
+                  Press <kbd className="font-['Geist_Mono'] text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Shift</kbd> + <kbd className="font-['Geist_Mono'] text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Enter</kbd> for new line
+                </span>
+              </div>
+              
+              {/* Right Side: Tools & Send */}
+              <div className="flex items-center gap-1.5">
+                
+                {/* Model Selector Pill */}
+                <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-black/5 dark:border-white/10 bg-[#f4f4f5] dark:bg-[#27272a]/50 text-[#71717a] dark:text-[#a1a1aa] text-[13px] font-['Geist'] cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors mr-1">
+                  <Sparkles className="w-3.5 h-3.5 text-[#a855f7]" />
+                  {inputMode === 'text' ? 'sarvam-m' : 'saaras:v3'}
+                  <ChevronDown className="w-3.5 h-3.5 opacity-50 ml-0.5" />
+                </div>
+
+                {/* Keyboard (Text Mode) */}
+                <button 
+                  onClick={() => setInputMode('text')} 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${inputMode === 'text' ? 'bg-[#f4f4f5] dark:bg-[#27272a] text-[#09090b] dark:text-[#fafafa] border border-black/10 dark:border-white/10 shadow-sm' : 'text-[#71717a] dark:text-[#a1a1aa] hover:bg-black/5 dark:hover:bg-white/5'}`}
+                >
+                  <Keyboard className="w-4.5 h-4.5" />
+                </button>
+
+                {/* Mic (Audio Mode & Record Toggle) */}
+                <button 
+                  onClick={() => {
+                    if (inputMode !== 'audio') setInputMode('audio');
+                    else isRecording ? stopRecording() : startRecording();
+                  }} 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${inputMode === 'audio' ? (isRecording ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-[#f4f4f5] dark:bg-[#27272a] text-[#09090b] dark:text-[#fafafa] border border-black/10 dark:border-white/10 shadow-sm') : 'text-[#71717a] dark:text-[#a1a1aa] hover:bg-black/5 dark:hover:bg-white/5'}`}
+                >
+                  {isRecording ? <Square className="w-4 h-4 fill-current" /> : <Mic className="w-4.5 h-4.5" />}
+                </button>
+                
+                {/* Send Button */}
+                <button 
+                  onClick={() => handleSubmit()} 
+                  disabled={!canSend} 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ml-1 ${canSend ? "bg-[#09090b] dark:bg-[#fafafa] text-white dark:text-[#09090b] shadow-md hover:scale-105 cursor-pointer border-none" : "bg-[#f4f4f5] dark:bg-[#27272a] text-[#a1a1aa] dark:text-[#52525b] border border-black/5 dark:border-white/10 cursor-default"}`}
+                >
+                  {isStreaming || isThinking 
+                    ? <div className="w-4 h-4 border-[2px] border-current border-t-transparent rounded-full animate-[spin_0.7s_linear_infinite]" />
+                    : <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+                  }
+                </button>
+
               </div>
             </div>
           </div>
-
-          <main className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4 sm:px-7">
-            {error && (
-              <div className="mb-3 flex shrink-0 items-start gap-2 rounded-2xl border border-red-200 bg-red-50/90 p-3 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200" role="alert">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div>
-                  <h2 className="text-xs font-semibold">Stream notification</h2>
-                  <p className="mt-1 text-xs">{error}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex min-h-0 flex-1 items-stretch justify-center pb-4">
-              <div
-                className="flex h-full min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white/86 shadow-[0_14px_42px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0f1117]/86 dark:shadow-[0_14px_42px_rgba(0,0,0,0.35)]"
-                aria-live="polite"
-                aria-atomic="false"
-              >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/72 px-4 py-3 dark:border-white/10 dark:bg-white/[0.035]">
-                  <div>
-                    <h2 className="text-xs font-semibold text-slate-950 dark:text-white">Conversation</h2>
-                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                      {isStreaming ? 'Streaming latest response' : messages.length > 0 ? 'Chat history preserved' : 'No messages yet'}
-                    </p>
-                  </div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-200">
-                    <span className={`h-2 w-2 rounded-full ${isStreaming ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                    {statusText}
-                  </div>
-                </div>
-
-                <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 text-xs leading-6 text-slate-800 dark:text-slate-100 sm:p-5">
-                  {messages.length > 0 ? (
-                    messages.map((message) => (
-                      <ChatBubble
-                        key={message.id}
-                        isActiveStreaming={isStreaming && message.id === messages[messages.length - 1]?.id}
-                        message={message}
-                      />
-                    ))
-                  ) : (
-                    <span className="text-xs text-slate-400 dark:text-slate-500">
-                      Start a message below. Your prompts and Sarvam responses will stay in this chat.
-                    </span>
-                  )}
-                  <div ref={scrollRef} className="h-2" />
-                </div>
-              </div>
-            </div>
-
-            <div className="mx-auto w-full max-w-5xl shrink-0 rounded-2xl border border-slate-200 bg-white/88 p-3 shadow-[0_14px_48px_rgba(15,23,42,0.10)] backdrop-blur-xl dark:border-white/10 dark:bg-[#14171d]/88 dark:shadow-[0_14px_48px_rgba(0,0,0,0.35)]">
-              <div className="min-h-[48px]">
-                {inputMode === 'text' ? (
-                  <textarea
-                    value={promptText}
-                    onChange={(event) => setPromptText(event.target.value)}
-                    placeholder="Ask anything..."
-                    className="h-16 w-full resize-none bg-transparent px-2 py-1.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:text-slate-400 dark:text-white dark:placeholder:text-slate-500 dark:disabled:text-slate-500"
-                    disabled={isStreaming}
-                    aria-label="Text prompt input"
-                  />
-                ) : (
-                  <div className="grid h-16 place-items-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-3 text-xs dark:border-white/10 dark:bg-white/[0.035]">
-                    {audioError ? (
-                      <span className="text-red-600 dark:text-red-300">{audioError}</span>
-                    ) : isTranscribing ? (
-                      <span className="font-medium text-[#5161ff] dark:text-[#9294ff]">Transcribing audio...</span>
-                    ) : isRecording ? (
-                      <button
-                        type="button"
-                        onClick={stopRecording}
-                        className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 font-semibold text-red-600 transition hover:bg-red-100 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/15"
-                      >
-                        <Square className="h-3.5 w-3.5 fill-current" />
-                        Stop recording
-                        <span className="relative ml-1 flex h-3 w-3">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                          <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
-                        </span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={startRecording}
-                        className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1.5 font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-                      >
-                        <Mic className="h-3.5 w-3.5" />
-                        Start recording
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <button
-                  type="button"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-200 text-slate-500 transition hover:border-indigo-200 hover:text-[#5161ff] dark:border-white/10 dark:text-slate-300 dark:hover:border-[#9294ff]/50 dark:hover:text-[#9294ff]"
-                  aria-label="Add context"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                  <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-0.5 dark:border-white/10 dark:bg-white/[0.045]">
-                    <button
-                      type="button"
-                      onClick={() => setInputMode('text')}
-                      className={`grid h-8 w-8 place-items-center rounded-full transition ${
-                        inputMode === 'text' ? 'bg-white text-[#5161ff] shadow-sm dark:bg-white/10 dark:text-[#9294ff]' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                      }`}
-                      aria-pressed={inputMode === 'text'}
-                      aria-label="Switch to text input"
-                    >
-                      <Type className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInputMode('audio')}
-                      className={`grid h-8 w-8 place-items-center rounded-full transition ${
-                        inputMode === 'audio' ? 'bg-white text-[#5161ff] shadow-sm dark:bg-white/10 dark:text-[#9294ff]' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-                      }`}
-                      aria-pressed={inputMode === 'audio'}
-                      aria-label="Switch to audio input"
-                    >
-                      <Mic className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-[#5161ff] shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-[#9294ff]"
-                    aria-label="Selected model"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    sarvam-m
-                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-[#5161ff] dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300 dark:hover:text-[#9294ff]"
-                    aria-label="Keyboard input"
-                    onClick={() => setInputMode('text')}
-                  >
-                    <Keyboard className="h-4 w-4" />
-                  </button>
-
-                  {isStreaming ? (
-                    <button
-                      type="button"
-                      onClick={stopStream}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-red-500 text-white shadow-lg shadow-red-200 transition hover:bg-red-600"
-                      aria-label="Stop inference"
-                    >
-                      <Square className="h-4 w-4 fill-current" />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={!promptText.trim()}
-                      className="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-white shadow-lg shadow-slate-300 transition hover:bg-[#5161ff] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:bg-white dark:text-slate-950 dark:shadow-none dark:hover:bg-[#9294ff] dark:disabled:bg-white/20 dark:disabled:text-slate-500"
-                      aria-label="Run inference"
-                    >
-                      <SendHorizontal className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </main>
         </div>
-      </section>
-    </div>
-  );
-}
+      </main>
 
-const ChatBubble = memo(function ChatBubble({
-  isActiveStreaming,
-  message,
-}: {
-  isActiveStreaming: boolean;
-  message: ChatMessage;
-}) {
-  const isUser = message.role === 'user';
-
-  return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div
-        className={`max-w-[78%] rounded-2xl px-3.5 py-3 shadow-sm ${
-          isUser
-            ? 'bg-slate-950 text-white dark:bg-white dark:text-slate-950'
-            : 'border border-slate-200 bg-white/90 text-slate-800 dark:border-white/10 dark:bg-white/[0.055] dark:text-slate-100'
-        }`}
-      >
-        <div
-          className={`mb-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
-            isUser ? 'text-white/60 dark:text-slate-500' : 'text-[#5161ff] dark:text-[#9294ff]'
-          }`}
-        >
-          {isUser ? 'You' : 'Sarvam'}
-        </div>
-        {message.content ? (
-          <div className="whitespace-pre-wrap">{message.content}</div>
-        ) : (
-          <div className="text-slate-400 dark:text-slate-500">Waiting for first token...</div>
-        )}
-        {isActiveStreaming && <span className="ml-1 inline-block h-3 w-1.5 animate-pulse rounded-sm bg-[#5161ff]" />}
-      </div>
-    </div>
-  );
-});
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-slate-200 dark:border-white/10 sm:border-r sm:pr-4">
-      <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{label}</p>
-      <p className="mt-1 min-h-5 font-mono text-sm font-semibold tracking-tight text-slate-950 dark:text-white">{value}</p>
+      {/* ─── RIGHT METRICS PANEL ───────────────────────────────────────────── */}
+      <RightSidebar 
+        metrics={{ tokens: metrics.tokenCount, tps: speed !== '—' ? Number(speed) : 0, elapsed: latency !== '—' ? Number(latency) : 0 }} 
+        isStreaming={isStreaming} 
+        isThinking={isThinking} 
+        model={inputMode === "text" ? "sarvam-m" : "saaras:v3"} 
+        mode={inputMode} 
+        error={error} 
+        onClearError={() => {/* Hook doesn't provide clear error natively, usually clears on next request */}} 
+      />
     </div>
   );
 }
