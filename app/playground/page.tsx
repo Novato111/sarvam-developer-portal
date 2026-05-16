@@ -533,7 +533,7 @@ function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'st
       <PersonaAvatar state={state} />
 
       {/* Bubble */}
-      <div className={`bg-[#fafafa] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[3px_12px_12px_12px] text-sm leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] max-w-[78%] animate-[fadeIn_0.18s_ease] tracking-[-0.01em] shadow-sm ${showDots ? 'px-4 py-[11px] min-w-[68px]' : 'px-4 py-2.5'}`}>
+      <div className={`max-w-[86%] break-words bg-[#fafafa] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[3px_12px_12px_12px] text-sm leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] animate-[fadeIn_0.18s_ease] tracking-[-0.01em] shadow-sm sm:max-w-[78%] ${showDots ? 'px-4 py-[11px] min-w-[68px]' : 'px-4 py-2.5'}`}>
         {showDots && (
           <div className="flex gap-[5px] items-center h-[18px]">
             {[0, 140, 280].map(d => <div key={d} className="w-[5px] h-[5px] rounded-full bg-[#71717a] opacity-60" style={{ animation: "dotBounce 1.2s ease-in-out infinite", animationDelay: `${d}ms` }} />)}
@@ -849,23 +849,28 @@ export default function Playground() {
   const latency = metrics.startTime > 0 && elapsedMs > 0 ? `${secondsElapsed.toFixed(2)}` : '—';
   const currentTheme = mounted && theme === 'system' ? systemTheme : theme;
   const canSend = promptText.trim() && !isStreaming && !isThinking && !isRecording && !isTranscribing;
+  const sidebarMetrics = {
+    tokens: metrics.tokenCount,
+    tps: speed !== '—' ? Number(speed) : 0,
+    elapsed: latency !== '—' ? Number(latency) : 0,
+  };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#09090b] font-sans">
+    <div className="flex h-[calc(100dvh-64px)] w-full overflow-hidden bg-white font-sans dark:bg-[#09090b] lg:h-screen">
       <GlobalStyles />
       
       {/* ─── CENTER CHAT AREA ──────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0f0f12]">
         
         {/* Header */}
-        <header className="flex min-h-[68px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-7 py-3 dark:border-white/10 dark:bg-[#09090b] sm:px-8">
+        <header className="flex min-h-[64px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-col justify-center gap-0.5">
             <h1 className="font-['Geist'] text-[15px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.02em]">Inference Playground</h1>
             <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
               Test on-device inference with text input, audio input, and live token streaming.
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
             {["Docs", "Feedback"].map(b => (
               <button key={b} className="px-3 py-[5px] rounded-[7px] border border-black/5 dark:border-white/10 bg-transparent text-[#71717a] text-xs cursor-pointer font-['Geist'] tracking-[-0.01em] transition-all hover:border-black/10 dark:hover:border-white/20 hover:text-[#09090b] dark:hover:text-[#fafafa]">
                 {b}
@@ -882,8 +887,10 @@ export default function Playground() {
           </div>
         </header>
 
+        <CompactMetricsBar metrics={sidebarMetrics} isStreaming={isStreaming} isThinking={isThinking} />
+
         {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col relative">
+        <div className="relative flex flex-1 flex-col overflow-y-auto px-4 py-4 sm:p-5">
           {messages.length === 0 && !isStreaming ? (
             <IdleHero onChip={handleSubmit} />
           ) : (
@@ -896,7 +903,7 @@ export default function Playground() {
                       <div className="w-[26px] h-[26px] rounded-full shrink-0 bg-[linear-gradient(135deg,#2563eb,#f97316)] flex items-center justify-center shadow-sm">
                         <span className="font-['Geist'] text-[9px] font-semibold text-white">U</span>
                       </div>
-                      <div className="max-w-[76%] bg-[#f4f4f5] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[12px_12px_3px_12px] px-[14px] py-[9px] text-[14px] leading-[1.7] text-[#09090b] dark:text-[#fafafa] font-['Geist'] tracking-[-0.01em] shadow-sm">
+                      <div className="max-w-[86%] break-words bg-[#f4f4f5] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[12px_12px_3px_12px] px-[14px] py-[9px] text-[14px] leading-[1.7] text-[#09090b] dark:text-[#fafafa] font-['Geist'] tracking-[-0.01em] shadow-sm sm:max-w-[76%]">
                         {m.content}
                       </div>
                     </div>
@@ -906,7 +913,7 @@ export default function Playground() {
                 return (
                   <div key={m.id} className="flex gap-2 items-start animate-[fadeUp_0.18s_ease]">
                     <PersonaAvatar state="idle" size={26} />
-                    <div className="max-w-[78%] py-[2px] font-['Geist']">
+                    <div className="max-w-[86%] break-words py-[2px] font-['Geist'] sm:max-w-[78%]">
                       <AssistantMarkdown content={m.content} />
                     </div>
                   </div>
@@ -918,15 +925,15 @@ export default function Playground() {
         </div>
 
         {/* ─── ENHANCED INPUT BOX ─── */}
-        <div className="relative px-4 pb-8 pt-2 shrink-0 max-w-4xl mx-auto w-full z-10 mb-4">
+        <div className="relative z-10 mx-auto mb-2 w-full max-w-4xl shrink-0 px-3 pb-4 pt-2 sm:mb-4 sm:px-4 sm:pb-8">
           
           {/* Glowing Gradient Background - Stronger opacity and larger range */}
-          <div className="absolute bottom-[-10px] left-[-20px] right-[-20px] h-[140px] bg-gradient-to-r from-blue-600/50 via-purple-600/70 to-orange-500/70 dark:from-blue-600/60 dark:via-purple-600/80 dark:to-orange-500/80 blur-[60px] -z-10 pointer-events-none rounded-full transition-opacity duration-500" />
+          <div className="absolute bottom-[-8px] left-4 right-4 h-24 rounded-full bg-gradient-to-r from-blue-600/40 via-purple-600/55 to-orange-500/55 blur-[42px] transition-opacity duration-500 dark:from-blue-600/50 dark:via-purple-600/65 dark:to-orange-500/65 sm:bottom-[-10px] sm:left-[-20px] sm:right-[-20px] sm:h-[140px] sm:blur-[60px] -z-10 pointer-events-none" />
           
-          <div className="bg-[#fafafa] dark:bg-[#18181b] border border-black/10 dark:border-white/10 rounded-[32px] transition-colors shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] focus-within:border-black/20 dark:focus-within:border-white/20 flex flex-col overflow-visible">
+          <div className="flex flex-col overflow-visible rounded-[24px] border border-black/10 bg-[#fafafa] shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-colors focus-within:border-black/20 dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:focus-within:border-white/20 sm:rounded-[32px]">
             
             {/* Top Textarea Section */}
-            <div className="min-h-[58px] px-5 pt-4 pb-1">
+            <div className="min-h-[58px] px-4 pb-1 pt-4 sm:px-5">
               {inputMode === 'text' ? (
                 <textarea
                   ref={textareaRef}
@@ -946,7 +953,7 @@ export default function Playground() {
             </div>
 
             {/* Bottom Toolbar Section */}
-            <div className="px-3 pb-3 flex items-center justify-between">
+            <div className="flex flex-col gap-2 px-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               
               {/* Left Side: Plus Icon & Helper Text */}
               <div className="flex items-center gap-3 pl-1">
@@ -959,13 +966,13 @@ export default function Playground() {
                 >
                   <Plus className="w-4.5 h-4.5" />
                 </button>
-                <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] font-['Geist'] hidden sm:inline-block select-none opacity-80">
+                <span className="hidden select-none font-['Geist'] text-[11px] text-[#a1a1aa] opacity-80 dark:text-[#52525b] md:inline-block">
                   Press <kbd className="font-medium text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Shift</kbd> + <kbd className="font-medium text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Enter</kbd> for new line
                 </span>
               </div>
               
               {/* Right Side: Tools & Send */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:flex-nowrap">
                 
                 <ModelSelector
                   inputMode={inputMode}
@@ -1000,7 +1007,7 @@ export default function Playground() {
                 <button 
                   onClick={() => handleSubmit()} 
                   disabled={!canSend} 
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ml-1 ${canSend ? "bg-[#09090b] dark:bg-[#fafafa] text-white dark:text-[#09090b] shadow-md hover:scale-105 cursor-pointer border-none" : "bg-[#f4f4f5] dark:bg-[#27272a] text-[#a1a1aa] dark:text-[#52525b] border border-black/5 dark:border-white/10 cursor-default"}`}
+                  className={`ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${canSend ? "bg-[#09090b] dark:bg-[#fafafa] text-white dark:text-[#09090b] shadow-md hover:scale-105 cursor-pointer border-none" : "bg-[#f4f4f5] dark:bg-[#27272a] text-[#a1a1aa] dark:text-[#52525b] border border-black/5 dark:border-white/10 cursor-default"}`}
                 >
                   {isStreaming || isThinking 
                     ? <div className="w-4 h-4 border-[2px] border-current border-t-transparent rounded-full animate-[spin_0.7s_linear_infinite]" />
@@ -1016,7 +1023,7 @@ export default function Playground() {
 
       {/* ─── RIGHT METRICS PANEL ───────────────────────────────────────────── */}
       <RightSidebar 
-        metrics={{ tokens: metrics.tokenCount, tps: speed !== '—' ? Number(speed) : 0, elapsed: latency !== '—' ? Number(latency) : 0 }} 
+        metrics={sidebarMetrics} 
         isStreaming={isStreaming} 
         isThinking={isThinking} 
         model={inputMode === "text" ? "sarvam-m" : "saaras:v3"} 

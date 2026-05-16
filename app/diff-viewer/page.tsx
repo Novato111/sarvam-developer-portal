@@ -122,10 +122,10 @@ export default function DiffViewer() {
   const diffStats = getDiffStats(diffResult);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white font-['Geist'] text-[#09090b] dark:bg-[#09090b] dark:text-[#fafafa]">
+    <div className="flex h-[calc(100dvh-64px)] w-full overflow-hidden bg-white font-['Geist'] text-[#09090b] dark:bg-[#09090b] dark:text-[#fafafa] lg:h-screen">
       <GlobalStyles />
       <main className="flex min-w-0 flex-1 flex-col bg-white dark:bg-[#0f0f12]">
-          <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-5 dark:border-white/10 dark:bg-[#09090b] sm:px-7">
+          <header className="flex shrink-0 flex-col items-start justify-center gap-3 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-7">
             <div className="flex min-w-0 flex-col justify-center">
               <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Model Output Diff View</h1>
               <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
@@ -135,7 +135,7 @@ export default function DiffViewer() {
             <ModeToggle isLiveMode={isLiveMode} onModeSwitch={handleModeSwitch} />
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-5 pt-4 sm:px-7">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 lg:px-7">
             <PromptCard
               isLiveMode={isLiveMode}
               isGenerating={isGenerating}
@@ -148,7 +148,7 @@ export default function DiffViewer() {
 
             <StatsCard stats={diffStats} />
 
-            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-2">
+            <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-2">
               <ModelCard
                 title="Baseline Model"
                 badge="Version A"
@@ -173,8 +173,8 @@ export default function DiffViewer() {
               />
             </div>
 
-            <div className="flex shrink-0 items-center gap-2 text-[11px] text-[#71717a]">
-              <Info className="h-3.5 w-3.5" />
+            <div className="flex shrink-0 items-start gap-2 text-[11px] leading-5 text-[#71717a] sm:items-center">
+              <Info className="h-3.5 w-3.5 shrink-0" />
               <span>
                 {isLiveMode
                   ? 'Use real model compares a baseline response and a candidate response for the same prompt.'
@@ -198,12 +198,12 @@ function ModeToggle({
   const liveActive = isLiveMode;
 
   return (
-    <div className="inline-flex w-fit shrink-0 rounded-[10px] border border-black/5 bg-[#f4f4f5] p-0.5 shadow-sm dark:border-white/10 dark:bg-[#18181b]">
+    <div className="inline-flex w-full shrink-0 rounded-[10px] border border-black/5 bg-[#f4f4f5] p-0.5 shadow-sm dark:border-white/10 dark:bg-[#18181b] sm:w-fit">
       <button
         type="button"
         onClick={() => onModeSwitch(false)}
         style={mockActive ? { background: activeToggleGradients.mock } : undefined}
-        className={`relative isolate inline-flex h-9 items-center gap-1.5 overflow-hidden rounded-[8px] px-3 text-xs font-medium tracking-[-0.01em] transition ${
+        className={`relative isolate inline-flex h-9 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-[8px] px-3 text-xs font-medium tracking-[-0.01em] transition sm:flex-none ${
           mockActive
             ? 'text-[#172607] shadow-[0_8px_18px_rgba(86,120,48,0.20)]'
             : 'text-[#71717a] hover:text-[#09090b] dark:hover:text-[#fafafa]'
@@ -217,7 +217,7 @@ function ModeToggle({
         type="button"
         onClick={() => onModeSwitch(true)}
         style={liveActive ? { background: activeToggleGradients.live } : undefined}
-        className={`relative isolate inline-flex h-9 items-center gap-1.5 overflow-hidden rounded-[8px] px-3 text-xs font-medium tracking-[-0.01em] transition ${
+        className={`relative isolate inline-flex h-9 flex-1 items-center justify-center gap-1.5 overflow-hidden rounded-[8px] px-3 text-xs font-medium tracking-[-0.01em] transition sm:flex-none ${
           liveActive
             ? 'text-white shadow-[0_8px_18px_rgba(148,74,68,0.22)]'
             : 'text-[#71717a] hover:text-[#09090b] dark:hover:text-[#fafafa]'
@@ -279,8 +279,8 @@ function PromptCard({
   };
 
   return (
-    <div className="relative isolate shrink-0 overflow-hidden rounded-[24px] border border-black/10 bg-[#fafafa] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_14px_42px_rgba(0,0,0,0.34)]">
-      <div className="pointer-events-none absolute inset-x-8 -bottom-12 h-28 rounded-full bg-[linear-gradient(90deg,rgba(37,99,235,0.22),rgba(168,85,247,0.26),rgba(249,115,22,0.22))] blur-3xl dark:bg-[linear-gradient(90deg,rgba(37,99,235,0.28),rgba(168,85,247,0.34),rgba(249,115,22,0.30))]" />
+    <div className="relative isolate shrink-0 overflow-hidden rounded-[20px] border border-black/10 bg-[#fafafa] p-3 shadow-[0_12px_34px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_14px_42px_rgba(0,0,0,0.34)] sm:rounded-[24px] sm:p-4">
+      <div className="pointer-events-none absolute inset-x-6 -bottom-12 h-24 rounded-full bg-[linear-gradient(90deg,rgba(37,99,235,0.18),rgba(168,85,247,0.22),rgba(249,115,22,0.18))] blur-3xl dark:bg-[linear-gradient(90deg,rgba(37,99,235,0.24),rgba(168,85,247,0.28),rgba(249,115,22,0.24))] sm:inset-x-8 sm:h-28" />
       <div className="relative z-10">
         <div className="min-w-0">
           <div
@@ -317,7 +317,7 @@ function PromptCard({
                   type="button"
                   onClick={onCompare}
                   disabled={isGenerating || !livePrompt.trim()}
-                  className="inline-flex h-10 items-center justify-center rounded-full bg-[#09090b] px-5 text-sm font-semibold tracking-[-0.01em] text-white shadow-sm transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#fafafa] dark:text-[#09090b]"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-full bg-[#09090b] px-5 text-sm font-semibold tracking-[-0.01em] text-white shadow-sm transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#fafafa] dark:text-[#09090b] sm:w-auto"
                 >
                   {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate and compare'}
                 </button>
@@ -357,7 +357,7 @@ function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
   ];
 
   return (
-    <div className="grid shrink-0 gap-3 rounded-[12px] border border-black/5 bg-[#fafafa] p-3.5 shadow-sm dark:border-white/10 dark:bg-[#0f0f12] sm:grid-cols-2 xl:grid-cols-5">
+    <div className="grid shrink-0 gap-3 rounded-[12px] border border-black/5 bg-[#fafafa] p-3.5 shadow-sm dark:border-white/10 dark:bg-[#0f0f12] sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
       {metrics.map((metric, index) => (
         <div
           key={metric.label}
@@ -367,7 +367,7 @@ function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
             {metric.label}
             {metric.label === 'Similarity' && <Info className="h-3 w-3" />}
           </div>
-          <div className={`mt-1 font-medium text-xl font-semibold tracking-normal ${metric.color}`}>{metric.value}</div>
+          <div className={`mt-1 text-xl font-semibold tracking-normal ${metric.color}`}>{metric.value}</div>
           {metric.sub && (
             <div className="mt-1 flex items-center gap-1.5 text-xs text-[#71717a]">
               <span
@@ -410,13 +410,13 @@ function ModelCard({
   const showDiff = diffResult && viewMode === 'diff';
 
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden rounded-[12px] border border-black/5 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-[#000000] ">
-      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-black/5 bg-white px-4 py-3 dark:border-white/10   dark:bg-[#0f0f12]">
-        <div className="flex items-center gap-3">
+    <div className="flex min-h-[320px] flex-col overflow-hidden rounded-[12px] border border-black/5 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-[#000000] xl:min-h-0">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-black/5 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#0f0f12] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
           <GradientAvatar tone={tone} />
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{title}</h2>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-sm font-semibold tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{title}</h2>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-medium tracking-[-0.01em] ${
                   isBlue ? 'bg-blue-50 text-[#2563eb] dark:bg-[#27272a] dark:text-[#60a5fa]' : 'bg-orange-50 text-orange-600 dark:bg-[#27272a] dark:text-[#fb923c]'
@@ -428,7 +428,7 @@ function ModelCard({
             <p className="mt-0.5 font-medium text-[11px] text-[#71717a]">{modeLabel}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           {diffResult && (
             <div className="inline-flex rounded-[9px] border border-black/5 bg-[#f4f4f5] p-0.5 dark:border-white/10 dark:bg-[#18181b]">
               {(['diff', 'text'] as const).map((mode) => (
@@ -462,14 +462,14 @@ function ModelCard({
         {showDiff ? (
           <HighlightedDiff diffResult={diffResult} side={side} />
         ) : diffResult ? (
-          <div className="whitespace-pre-wrap">{rawValue}</div>
+          <div className="whitespace-pre-wrap break-words">{rawValue}</div>
         ) : (
           <textarea
             value={rawValue}
             onChange={(event) => onRawChange(event.target.value)}
             disabled={disabled}
             placeholder={disabled ? 'Run Compare to generate output.' : 'Paste or edit model output here.'}
-            className="h-full min-h-[220px] w-full resize-none bg-transparent text-xs leading-6 text-[#09090b] outline-none placeholder:text-[#a1a1aa] disabled:text-[#71717a] dark:text-[#fafafa] dark:placeholder:text-[#52525b] dark:disabled:text-[#71717a]"
+            className="h-full min-h-[240px] w-full resize-none bg-transparent text-xs leading-6 text-[#09090b] outline-none placeholder:text-[#a1a1aa] disabled:text-[#71717a] dark:text-[#fafafa] dark:placeholder:text-[#52525b] dark:disabled:text-[#71717a] sm:min-h-[220px]"
           />
         )}
       </div>
@@ -479,7 +479,7 @@ function ModelCard({
 
 function HighlightedDiff({ diffResult, side }: { diffResult: DiffToken[]; side: 'removed' | 'added' }) {
   return (
-    <div className="whitespace-pre-wrap">
+    <div className="whitespace-pre-wrap break-words">
       {diffResult.map((token, index) => {
         if (side === 'removed' && token.type === 'added') return null;
         if (side === 'added' && token.type === 'removed') return null;
