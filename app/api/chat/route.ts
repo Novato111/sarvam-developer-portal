@@ -3,9 +3,22 @@ import { NextRequest } from 'next/server';
 
 export const runtime = 'edge'; // Edge runtime is heavily optimized for streaming
 
+type ChatMessage = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const { prompt } = await req.json();
+    const body = await req.json();
+    const messages = normalizeMessages(body);
+
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: 'Prompt is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     // 1. Call Sarvam's API
     const sarvamResponse = await fetch('https://api.sarvam.ai/v1/chat/completions', {
@@ -16,7 +29,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: 'sarvam-30b', // Their fastest model for real-time chat
-        messages: [{ role: 'user', content: prompt }],
+        messages,
         stream: true, // CRITICAL: This tells Sarvam not to wait for the full response
       }),
     });
@@ -36,10 +49,43 @@ export async function POST(req: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch {
     return new Response(JSON.stringify({ error: 'Failed to generate response' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
+}
+
+function normalizeMessages(body: unknown): ChatMessage[] {
+  if (!body || typeof body !== 'object') return [];
+
+  const payload = body as { prompt?: unknown; messages?: unknown };
+  if (Array.isArray(payload.messages)) {
+    return payload.messages
+      .map((message) => {
+        if (!message || typeof message !== 'object') return null;
+
+        const candidate = message as { role?: unknown; content?: unknown };
+        if (
+          (candidate.role === 'user' || candidate.role === 'assistant' || candidate.role === 'system') &&
+          typeof candidate.content === 'string' &&
+          candidate.content.trim()
+        ) {
+          return {
+            role: candidate.role,
+            content: candidate.content,
+          };
+        }
+
+        return null;
+      })
+      .filter((message): message is ChatMessage => message !== null);
+  }
+
+  if (typeof payload.prompt === 'string' && payload.prompt.trim()) {
+    return [{ role: 'user', content: payload.prompt }];
+  }
+
+  return [];
 }

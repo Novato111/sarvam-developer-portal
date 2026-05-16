@@ -19,13 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-gray-50 text-gray-900`}>
-        <div className="flex min-h-screen">
-          {/* Persistent Sidebar */}
+      <body className={`${inter.className} bg-white text-slate-950 antialiased dark:bg-[#07080a] dark:text-slate-50`}>
+        <div className="min-h-screen bg-white dark:bg-[#07080a]">
           <Sidebar />
-          
-          {/* Dynamic Main Content Area */}
-          <main className="flex-1 ml-64 overflow-y-auto">
+          <main className="min-h-screen lg:pl-[288px]">
             {children}
           </main>
         </div>

@@ -2,61 +2,70 @@
 'use client';
 
 import { useState } from 'react';
-
-import { SplitSquareHorizontal, ArrowLeft, Database, Zap, Loader2, Info } from 'lucide-react';
-import Link from 'next/link';
+import {
+  Braces,
+  Copy,
+  Database,
+  Info,
+  Keyboard,
+  Loader2,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import { computeDiff, DiffToken } from '../utils/diffAlgorithm';
 
-
-// Pre-defined edge cases to show off the algorithm
-  const mockScenarios = [
-    {
-      label: "Minor Tweaks",
-      modelA: "The Sarvam models are fast and highly accurate on Indian languages.",
-      modelB: "Sarvam AI models are extremely fast and accurate on Indic languages."
-    },
-    {
-      label: "Heavy Deletion",
-      modelA: "The quick brown fox jumps over the lazy dog and runs into the dark forest.",
-      modelB: "The fox jumps over the dog."
-    },
-    {
-      label: "Total Rewrite",
-      modelA: "Company X is building a developer portal for enterprise engineers.",
-      modelB: "A new internal hub is being developed to assist software engineering teams."
-    }
-  ];
-
+const mockScenarios = [
+  {
+    label: 'Minor Tweaks',
+    prompt: 'Compare concise descriptions of Sarvam models.',
+    modelA: 'The Sarvam models are fast and highly accurate on Indian languages.',
+    modelB: 'Sarvam AI models are extremely fast and accurate on Indic languages.',
+  },
+  {
+    label: 'Heavy Deletion',
+    prompt: 'Compare a verbose sentence against a shorter rewrite.',
+    modelA: 'The quick brown fox jumps over the lazy dog and runs into the dark forest.',
+    modelB: 'The fox jumps over the dog.',
+  },
+  {
+    label: 'Education AI',
+    prompt: 'Explain the benefits of using AI in education.',
+    modelA:
+      'AI in education can personalize learning experiences for students. It helps teachers automate repetitive tasks and provides intelligent insights to improve teaching strategies. Students get instant feedback which helps them learn faster. It also reduces administrative workloads and makes education more efficient.',
+    modelB:
+      'AI in education can personalize learning experiences for students. It helps teachers streamline operations and delivers intelligent insights that enhance teaching strategies. Students receive instant feedback which accelerates their learning. It also minimizes administrative workloads and makes education more effective and impactful.',
+  },
+];
 
 export default function DiffViewer() {
-  // Mode State
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [livePrompt, setLivePrompt] = useState('');
+  const [livePrompt, setLivePrompt] = useState(mockScenarios[2].prompt);
+  const [modelAOutput, setModelAOutput] = useState(mockScenarios[2].modelA);
+  const [modelBOutput, setModelBOutput] = useState(mockScenarios[2].modelB);
+  const [diffResult, setDiffResult] = useState<DiffToken[] | null>(
+    computeDiff(mockScenarios[2].modelA, mockScenarios[2].modelB)
+  );
 
   const loadMockScenario = (index: number) => {
-    setModelAOutput(mockScenarios[index].modelA);
-    setModelBOutput(mockScenarios[index].modelB);
-    setDiffResult(null); // Clear the diff so they have to click "Run Comparison" again, making the action feel tactile
+    const scenario = mockScenarios[index];
+    setLivePrompt(scenario.prompt);
+    setModelAOutput(scenario.modelA);
+    setModelBOutput(scenario.modelB);
+    setDiffResult(computeDiff(scenario.modelA, scenario.modelB));
   };
-
-  // Text States
-  const [modelAOutput, setModelAOutput] = useState("The Sarvam models are fast and highly accurate on Indian languages.");
-  const [modelBOutput, setModelBOutput] = useState("Sarvam AI models are extremely fast and accurate on Indic languages.");
-  const [diffResult, setDiffResult] = useState<DiffToken[] | null>(null);
 
   const handleModeSwitch = (live: boolean) => {
     setIsLiveMode(live);
-    setDiffResult(null); // Clear previous results
-    if (!live) {
-      // Reset to perfect mock data
-      setModelAOutput("The Sarvam models are fast and highly accurate on Indian languages.");
-      setModelBOutput("Sarvam AI models are extremely fast and accurate on Indic languages.");
-    } else {
-      // Clear for live generation
-      setModelAOutput("");
-      setModelBOutput("");
+    setDiffResult(null);
+
+    if (live) {
+      setModelAOutput('');
+      setModelBOutput('');
+      return;
     }
+
+    loadMockScenario(2);
   };
 
   const handleGenerateAndCompare = async () => {
@@ -64,14 +73,14 @@ export default function DiffViewer() {
       if (!livePrompt.trim()) return;
       setIsGenerating(true);
       setDiffResult(null);
-      
+
       try {
         const res = await fetch('/api/compare', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt: livePrompt }),
         });
-        
+
         const data = await res.json();
         if (data.modelA && data.modelB) {
           setModelAOutput(data.modelA);
@@ -79,193 +88,348 @@ export default function DiffViewer() {
           setDiffResult(computeDiff(data.modelA, data.modelB));
         }
       } catch (error) {
-        console.error("Failed to fetch live comparison", error);
+        console.error('Failed to fetch live comparison', error);
       } finally {
         setIsGenerating(false);
       }
-    } else {
-      setDiffResult(computeDiff(modelAOutput, modelBOutput));
+      return;
     }
+
+    setDiffResult(computeDiff(modelAOutput, modelBOutput));
   };
-  // Calculate Diff Statistics
-  const diffStats = diffResult ? {
-    added: diffResult.filter(t => t.type === 'added').length,
-    removed: diffResult.filter(t => t.type === 'removed').length,
-    unchanged: diffResult.filter(t => t.type === 'unchanged').length,
-    total: diffResult.length
-  } : null;
+
+  const diffStats = getDiffStats(diffResult);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-900">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* Header with Mode Toggle & Description */}
-        <header className="flex items-start justify-between pb-6 border-b border-gray-200">
-          <div>
-            
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-              <SplitSquareHorizontal className="w-8 h-8 text-purple-600" />
-              Model Output Diff
-            </h1>
-            <p className="text-gray-500 mt-1">Compare outputs from two model versions at the token level.</p>
-          </div>
+    <div className="h-screen overflow-hidden bg-white p-3 dark:bg-[#07080a] sm:p-4">
+      <section className="relative h-[calc(100vh-1.5rem)] overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_18px_64px_rgba(15,23,42,0.09)] ring-1 ring-slate-900/[0.03] dark:border-white/10 dark:bg-[#101216] dark:shadow-[0_18px_64px_rgba(0,0,0,0.55)] dark:ring-white/5 sm:h-[calc(100vh-2rem)]">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(105deg,rgba(255,166,73,0.28),rgba(255,119,138,0.13),rgba(112,112,255,0.18))] dark:bg-[linear-gradient(105deg,rgba(73,68,255,0.36),rgba(178,74,190,0.20),rgba(255,96,12,0.32))]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,255,255,0.9))] dark:bg-[radial-gradient(circle_at_70%_10%,rgba(124,116,255,0.14),transparent_30%),linear-gradient(180deg,rgba(16,18,22,0.98),rgba(10,12,16,0.92))]" />
 
-          {/* Toggle and Context Area */}
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex bg-gray-100 p-1 rounded-lg border">
-              <button
-                onClick={() => handleModeSwitch(false)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  !isLiveMode ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Database className="w-4 h-4" /> Mock Data
-              </button>
-              <button
-                onClick={() => handleModeSwitch(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  isLiveMode ? 'bg-white shadow-sm text-purple-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Zap className="w-4 h-4" /> Live API
-              </button>
+        <div className="relative z-10 flex h-full min-h-0 flex-col">
+          <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200/80 px-5 py-4 dark:border-white/10 sm:px-7">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Model Diff</h1>
+              <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm">
+                Compare responses from two model versions and see exactly what changed.
+              </p>
             </div>
-            
-            {/* Dynamic Description explaining what the toggle does */}
-            <div className="flex items-center gap-1.5 text-xs text-gray-500 max-w-xs text-right">
-              <Info className="w-3.5 h-3.5 flex-shrink-0" />
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#8578ff] via-[#c46bff] to-[#ff8a4b] text-xs font-bold text-white shadow-lg shadow-violet-200">
+              SU
+            </div>
+          </header>
+
+          <main className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-5 pt-4 sm:px-7">
+            <PromptCard
+              isLiveMode={isLiveMode}
+              isGenerating={isGenerating}
+              livePrompt={livePrompt}
+              onPromptChange={setLivePrompt}
+              onModeSwitch={handleModeSwitch}
+              onScenarioSelect={loadMockScenario}
+              onCompare={handleGenerateAndCompare}
+            />
+
+            <StatsCard stats={diffStats} />
+
+            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-2">
+              <ModelCard
+                title="sarvam-30b"
+                badge="Model A"
+                tone="blue"
+                modeLabel={isLiveMode ? 'temperature 0.1' : 'base output'}
+                rawValue={modelAOutput}
+                onRawChange={setModelAOutput}
+                diffResult={diffResult}
+                disabled={isLiveMode || isGenerating}
+                side="removed"
+              />
+              <ModelCard
+                title="sarvam-105b"
+                badge="Model B"
+                tone="orange"
+                modeLabel={isLiveMode ? 'temperature 0.2' : 'variant output'}
+                rawValue={modelBOutput}
+                onRawChange={setModelBOutput}
+                diffResult={diffResult}
+                disabled={isLiveMode || isGenerating}
+                side="added"
+              />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <Info className="h-3.5 w-3.5" />
               <span>
-                {isLiveMode 
-                  ? "Fetches real outputs from Sarvam's API via parallel requests using different temperatures." 
-                  : "Uses static, deterministic text to cleanly demonstrate the underlying Dynamic Programming LCS algorithm."}
+                {isLiveMode
+                  ? 'Live mode uses temperature 0.1 for Model A and 0.2 for Model B to surface meaningful variations.'
+                  : 'Mock mode uses local examples, so you can test the diff UI without calling the API.'}
               </span>
             </div>
-          </div>
-        </header>
-
-        {/* Live Prompt Input Area */}
-        {isLiveMode && (
-          <div className="bg-white p-4 rounded-xl border shadow-sm flex gap-4 items-center">
-             <input 
-                type="text"
-                value={livePrompt}
-                onChange={(e) => setLivePrompt(e.target.value)}
-                placeholder="Enter a prompt to generate two distinct model outputs..."
-                className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                disabled={isGenerating}
-             />
-          </div>
-        )}
-
-        {/* Input Text Areas with Dynamic Model Badges */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-700">Model Version A</h2>
-              {/* Dynamic Badge */}
-              <span className="text-[10px] font-mono uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-1 rounded border">
-                {isLiveMode ? 'sarvam-30b • temp: 0.1' : 'Mock Base Output'}
-              </span>
-            </div>
-            <textarea
-              value={modelAOutput}
-              onChange={(e) => setModelAOutput(e.target.value)}
-              className="w-full h-48 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none font-mono text-sm leading-relaxed"
-              disabled={isGenerating || isLiveMode}
-            />
-          </div>
-          <div className="bg-white p-4 rounded-xl border shadow-sm flex flex-col">
-             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold text-gray-700">Model Version B</h2>
-               {/* Dynamic Badge */}
-              <span className="text-[10px] font-mono uppercase tracking-wider bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">
-                {isLiveMode ? 'sarvam-30b • temp: 0.8' : 'Mock Instruct Output'}
-              </span>
-            </div>
-            <textarea
-              value={modelBOutput}
-              onChange={(e) => setModelBOutput(e.target.value)}
-              className="w-full h-48 p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none font-mono text-sm leading-relaxed"
-              disabled={isGenerating || isLiveMode}
-            />
-          </div>
+          </main>
         </div>
-{/* Sample Prompt Chips (Only in Mock Mode) */}
-        {!isLiveMode && (
-          <div className="flex flex-wrap gap-2 items-center text-sm mb-4 animate-in fade-in">
-            <span className="text-gray-500 font-medium mr-2">Try an edge case:</span>
-            {mockScenarios.map((scenario, idx) => (
-              <button
-                key={idx}
-                onClick={() => loadMockScenario(idx)}
-                className="px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-full transition-colors"
-              >
-                {scenario.label}
-              </button>
-            ))}
-          </div>
-        )}
-        {/* Action Button */}
-        <div className="flex justify-center">
+      </section>
+    </div>
+  );
+}
+
+function PromptCard({
+  isLiveMode,
+  isGenerating,
+  livePrompt,
+  onPromptChange,
+  onModeSwitch,
+  onScenarioSelect,
+  onCompare,
+}: {
+  isLiveMode: boolean;
+  isGenerating: boolean;
+  livePrompt: string;
+  onPromptChange: (value: string) => void;
+  onModeSwitch: (value: boolean) => void;
+  onScenarioSelect: (index: number) => void;
+  onCompare: () => void;
+}) {
+  return (
+    <div className="shrink-0 rounded-2xl border border-slate-200 bg-white/88 p-4 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045] dark:shadow-[0_12px_34px_rgba(0,0,0,0.25)]">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+        <div className="min-w-0 flex-1">
+          <label htmlFor="diff-prompt" className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Enter your prompt
+          </label>
+          <textarea
+            id="diff-prompt"
+            value={livePrompt}
+            onChange={(event) => onPromptChange(event.target.value)}
+            disabled={!isLiveMode || isGenerating}
+            className="mt-2 h-16 w-full resize-none bg-transparent text-sm leading-6 text-slate-950 outline-none placeholder:text-slate-400 disabled:text-slate-900 dark:text-white dark:placeholder:text-slate-500 dark:disabled:text-slate-100"
+            placeholder="Explain the benefits of using AI in education."
+          />
+
+          {!isLiveMode && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Examples</span>
+              {mockScenarios.map((scenario, index) => (
+                <button
+                  key={scenario.label}
+                  type="button"
+                  onClick={() => onScenarioSelect(index)}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-600 transition hover:border-[#6f72ff]/40 hover:text-[#5161ff] dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300 dark:hover:text-[#9294ff]"
+                >
+                  {scenario.label}
+                  <span className="sr-only"> example {index + 1}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 lg:justify-end">
+          <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-0.5 dark:border-white/10 dark:bg-white/[0.045]">
             <button
-              onClick={handleGenerateAndCompare}
-              disabled={isGenerating || (isLiveMode && !livePrompt)}
-              className="px-8 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2"
+              type="button"
+              onClick={() => onModeSwitch(false)}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition ${
+                !isLiveMode
+                  ? 'bg-white text-slate-950 shadow-sm dark:bg-white/10 dark:text-white'
+                  : 'text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+              }`}
             >
-              {isGenerating ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating & Diffing...</> : 'Run Comparison'}
+              <Database className="h-3.5 w-3.5" />
+              Mock
             </button>
-        </div>
-
-        {/* Output Diff Result & Analytics */}
-        {diffResult && diffStats && (
-          <div className="bg-white border rounded-xl shadow-sm overflow-hidden mt-8 animate-in fade-in slide-in-from-bottom-4">
-             
-             {/* Main Header */}
-             <div className="bg-gray-100 border-b px-6 py-4 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-700">Token-Level Analysis</h3>
-             </div>
-
-             {/* The New Analytics Report Bar */}
-             <div className="bg-gray-50 border-b px-6 py-3 flex gap-6 text-sm">
-                <div className="flex flex-col">
-                  <span className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Total Tokens</span>
-                  <span className="font-mono text-gray-900 font-medium">{diffStats.total}</span>
-                </div>
-                <div className="w-px bg-gray-200"></div> {/* Divider */}
-                <div className="flex flex-col">
-                  <span className="text-green-600 text-xs uppercase tracking-wider font-semibold">Tokens Added</span>
-                  <span className="font-mono text-green-700 font-medium">+{diffStats.added}</span>
-                </div>
-                <div className="w-px bg-gray-200"></div> {/* Divider */}
-                <div className="flex flex-col">
-                  <span className="text-red-600 text-xs uppercase tracking-wider font-semibold">Tokens Removed</span>
-                  <span className="font-mono text-red-700 font-medium">-{diffStats.removed}</span>
-                </div>
-                <div className="w-px bg-gray-200"></div> {/* Divider */}
-                <div className="flex flex-col">
-                  <span className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Similarity</span>
-                  <span className="font-mono text-gray-900 font-medium">
-                    {Math.round((diffStats.unchanged / diffStats.total) * 100)}%
-                  </span>
-                </div>
-             </div>
-             
-             {/* The Highlighted Text Area */}
-             <div className="p-8 text-lg leading-loose font-serif whitespace-pre-wrap">
-               {diffResult.map((token, idx) => {
-                 if (token.type === 'added') {
-                   return <span key={idx} className="bg-green-100 text-green-900 px-1 rounded mx-px font-medium">{token.value}</span>;
-                 }
-                 if (token.type === 'removed') {
-                   return <span key={idx} className="bg-red-100 text-red-900 px-1 rounded mx-px line-through opacity-70">{token.value}</span>;
-                 }
-                 return <span key={idx} className="text-gray-800">{token.value}</span>;
-               })}
-             </div>
+            <button
+              type="button"
+              onClick={() => onModeSwitch(true)}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition ${
+                isLiveMode
+                  ? 'bg-white text-[#5161ff] shadow-sm dark:bg-white/10 dark:text-[#9294ff]'
+                  : 'text-slate-500 hover:text-slate-950 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Live API
+            </button>
           </div>
-        )}
 
+          <button
+            type="button"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/[0.045] dark:text-slate-300"
+            aria-label="Prompt tools"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onCompare}
+            disabled={isGenerating || (isLiveMode && !livePrompt.trim())}
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-[linear-gradient(100deg,#6f72ff,#ff765d)] px-4 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(111,114,255,0.25)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Braces className="h-4 w-4" />}
+            Compare
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
+  const metrics = [
+    { label: 'Total Tokens', value: String(stats.total), sub: '', color: 'text-slate-950 dark:text-white' },
+    { label: 'Added', value: `+ ${stats.added}`, sub: `${stats.addedPct}%`, color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'Removed', value: `- ${stats.removed}`, sub: `${stats.removedPct}%`, color: 'text-red-600 dark:text-red-400' },
+    { label: 'Unchanged', value: String(stats.unchanged), sub: `${stats.unchangedPct}%`, color: 'text-slate-950 dark:text-white' },
+    { label: 'Similarity', value: `${stats.similarity}%`, sub: '', color: 'text-[#5161ff] dark:text-[#7b73ff]' },
+  ];
+
+  return (
+    <div className="grid shrink-0 gap-3 rounded-2xl border border-slate-200 bg-white/82 p-3.5 shadow-[0_12px_34px_rgba(15,23,42,0.05)] backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.045] dark:shadow-[0_12px_34px_rgba(0,0,0,0.25)] sm:grid-cols-2 xl:grid-cols-5">
+      {metrics.map((metric, index) => (
+        <div
+          key={metric.label}
+          className={`px-3 ${index > 0 ? 'border-slate-200 dark:border-white/10 xl:border-l' : ''}`}
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            {metric.label}
+            {metric.label === 'Similarity' && <Info className="h-3 w-3" />}
+          </div>
+          <div className={`mt-1 font-mono text-xl font-semibold tracking-tight ${metric.color}`}>{metric.value}</div>
+          {metric.sub && (
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  metric.label === 'Added' ? 'bg-emerald-500' : metric.label === 'Removed' ? 'bg-red-500' : 'bg-slate-400'
+                }`}
+              />
+              {metric.sub}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ModelCard({
+  title,
+  badge,
+  tone,
+  modeLabel,
+  rawValue,
+  onRawChange,
+  diffResult,
+  disabled,
+  side,
+}: {
+  title: string;
+  badge: string;
+  tone: 'blue' | 'orange';
+  modeLabel: string;
+  rawValue: string;
+  onRawChange: (value: string) => void;
+  diffResult: DiffToken[] | null;
+  disabled: boolean;
+  side: 'removed' | 'added';
+}) {
+  const isBlue = tone === 'blue';
+
+  return (
+    <div className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white/86 shadow-[0_12px_34px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-white/10 dark:bg-[#0f1117]/86 dark:shadow-[0_12px_34px_rgba(0,0,0,0.3)]">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/72 px-4 py-3 dark:border-white/10 dark:bg-white/[0.035]">
+        <div className="flex items-center gap-3">
+          <div
+            className={`grid h-8 w-8 place-items-center rounded-full ${
+              isBlue ? 'bg-indigo-50 text-[#5161ff] dark:bg-[#5161ff]/20 dark:text-[#9294ff]' : 'bg-orange-50 text-orange-500 dark:bg-orange-500/15 dark:text-orange-300'
+            }`}
+          >
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-slate-950 dark:text-white">{title}</h2>
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  isBlue ? 'bg-indigo-50 text-[#5161ff] dark:bg-[#5161ff]/20 dark:text-[#9294ff]' : 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300'
+                }`}
+              >
+                {badge}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">{modeLabel}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+          aria-label={`Copy ${title} output`}
+          onClick={() => navigator.clipboard?.writeText(rawValue)}
+        >
+          <Copy className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 font-mono text-xs leading-6 text-slate-800 dark:text-slate-100">
+        {diffResult ? (
+          <HighlightedDiff diffResult={diffResult} side={side} />
+        ) : (
+          <textarea
+            value={rawValue}
+            onChange={(event) => onRawChange(event.target.value)}
+            disabled={disabled}
+            placeholder={disabled ? 'Run Compare to generate output.' : 'Paste or edit model output here.'}
+            className="h-full min-h-[220px] w-full resize-none bg-transparent text-xs leading-6 text-slate-800 outline-none placeholder:text-slate-400 disabled:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500 dark:disabled:text-slate-500"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HighlightedDiff({ diffResult, side }: { diffResult: DiffToken[]; side: 'removed' | 'added' }) {
+  return (
+    <div className="whitespace-pre-wrap">
+      {diffResult.map((token, index) => {
+        if (side === 'removed' && token.type === 'added') return null;
+        if (side === 'added' && token.type === 'removed') return null;
+
+        if (token.type === 'added') {
+          return (
+            <span key={index} className="mx-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              {token.value}
+            </span>
+          );
+        }
+
+        if (token.type === 'removed') {
+          return (
+            <span key={index} className="mx-0.5 rounded-md bg-red-100 px-1.5 py-0.5 font-semibold text-red-700 line-through dark:bg-red-500/15 dark:text-red-300">
+              {token.value}
+            </span>
+          );
+        }
+
+        return <span key={index}>{token.value}</span>;
+      })}
+    </div>
+  );
+}
+
+function getDiffStats(diffResult: DiffToken[] | null) {
+  const added = diffResult?.filter((token) => token.type === 'added').length ?? 0;
+  const removed = diffResult?.filter((token) => token.type === 'removed').length ?? 0;
+  const unchanged = diffResult?.filter((token) => token.type === 'unchanged').length ?? 0;
+  const total = added + removed + unchanged;
+  const percent = (value: number) => (total > 0 ? Math.round((value / total) * 1000) / 10 : 0);
+
+  return {
+    added,
+    removed,
+    unchanged,
+    total,
+    addedPct: percent(added),
+    removedPct: percent(removed),
+    unchangedPct: percent(unchanged),
+    similarity: percent(unchanged),
+  };
 }

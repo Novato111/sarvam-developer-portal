@@ -2,31 +2,59 @@
 // src/hooks/useStream.ts
 import { useRef, useState } from 'react';
 
+export interface StreamMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+interface StreamCallbacks {
+  onToken?: (token: string) => void;
+}
+
 export function useStream() {
   const [output, setOutput] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState({ tokenCount: 0, startTime: 0 });
-const abortControllerRef = useRef<AbortController | null>(null);
-  const startStream = async (prompt: string) => {
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const startStream = async (input: string | StreamMessage[], callbacks?: StreamCallbacks) => {
     setIsStreaming(true);
     setError(null);
     setOutput(''); // Clear previous run
-    
-
-
-
 
     const startTime = performance.now();
     let localTokenCount = 0;
+    let fullText = '';
+    let pendingText = '';
+    let animationFrameId: number | null = null;
     setMetrics({ tokenCount: 0, startTime });
 
-abortControllerRef.current = new AbortController();
+    const flushPendingText = () => {
+      if (!pendingText) return;
+
+      const textToFlush = pendingText;
+      pendingText = '';
+      setOutput(fullText);
+      callbacks?.onToken?.(textToFlush);
+      setMetrics({ tokenCount: localTokenCount, startTime });
+    };
+
+    const scheduleFlush = () => {
+      if (animationFrameId !== null) return;
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        animationFrameId = null;
+        flushPendingText();
+      });
+    };
+
+    abortControllerRef.current = new AbortController();
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify(Array.isArray(input) ? { messages: input } : { prompt: input }),
         signal: abortControllerRef.current.signal,
       });
 
@@ -53,22 +81,27 @@ abortControllerRef.current = new AbortController();
         
         const extractedText = parseSSEChunk(chunk); 
         if (extractedText) {
-             setOutput((prev) => prev + extractedText);
-             
+             fullText += extractedText;
+             pendingText += extractedText;
+
              // Update metrics
-             localTokenCount += extractedText.trim().split(/\s+/).length; // Rough token estimation
-             setMetrics({ tokenCount: localTokenCount, startTime });
+             localTokenCount += extractedText.trim() ? extractedText.trim().split(/\s+/).length : 0; // Rough token estimation
+             scheduleFlush();
         }
       }
-    }
-    catch (err: any) {
+    } catch (err: unknown) {
       // NEW: Catch the specific AbortError so we don't treat it as a crash
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         setError('Generation stopped by user.');
       } else {
         setError('Connection interrupted mid-stream. Partial output preserved.');
       }
     } finally {
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      flushPendingText();
       setIsStreaming(false);
       abortControllerRef.current = null; // Cleanup
     }
@@ -94,7 +127,7 @@ function parseSSEChunk(chunk: string): string {
             try {
                 const data = JSON.parse(line.slice(6));
                 text += data.choices[0]?.delta?.content || '';
-            } catch (e) {
+            } catch {
                 // Ignore parse errors on incomplete chunks
             }
         }
