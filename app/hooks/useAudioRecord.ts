@@ -1,6 +1,9 @@
 // src/hooks/useAudioRecord.ts
 import { useState, useRef, useCallback } from 'react';
 
+const MIN_RECORDING_MS = 800;
+const MIN_AUDIO_BYTES = 900;
+
 export function useAudioRecord(onTranscriptionComplete: (text: string) => void) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -10,6 +13,7 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
   // without triggering unnecessary re-renders.
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartedAtRef = useRef<number>(0);
 
   const startRecording = useCallback(async () => {
     setAudioError(null);
@@ -21,6 +25,7 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = []; // Clear previous recordings
+      recordingStartedAtRef.current = Date.now();
 
       // 3. Collect audio chunks as they are generated
       mediaRecorder.ondataavailable = (event) => {
@@ -33,12 +38,23 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
       // src/hooks/useAudioRecord.ts (Updated segment)
 
       mediaRecorder.onstop = async () => {
-        setIsTranscribing(true);
-        
         // Let the browser decide the blob type based on the recorded chunks to avoid mime-type crashes
-     // Explicitly force the webm type so it matches our backend route
-const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        // Explicitly force the webm type so it matches our backend route
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const recordedMs = Date.now() - recordingStartedAtRef.current;
         stream.getTracks().forEach(track => track.stop());
+        mediaRecorderRef.current = null;
+
+        if (
+          recordedMs < MIN_RECORDING_MS ||
+          audioChunksRef.current.length === 0 ||
+          audioBlob.size < MIN_AUDIO_BYTES
+        ) {
+          setAudioError('Recording was too short. Hold the mic and speak for a moment.');
+          return;
+        }
+
+        setIsTranscribing(true);
 
         try {
           // Send to our secure Next.js route instead of Sarvam directly
@@ -55,17 +71,17 @@ const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           }
 
           const data = await response.json();
+          const transcript = typeof data.transcript === 'string' ? data.transcript.trim() : '';
           
-          if (data.transcript) {
-             onTranscriptionComplete(data.transcript);
+          if (transcript) {
+             onTranscriptionComplete(transcript);
           } else {
-             throw new Error('No transcript returned');
+             setAudioError('No speech detected. Try a slightly longer recording.');
           }
 
         } catch (error) {
-          // I added console.error here so if it fails again, check your browser console (F12)!
           console.error("Audio Transcription failed:", error); 
-          setAudioError("Failed to transcribe audio. Check console for details.");
+          setAudioError("Couldn't transcribe audio. Please try again.");
         } finally {
           setIsTranscribing(false);
         }
