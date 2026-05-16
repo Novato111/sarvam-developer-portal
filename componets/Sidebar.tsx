@@ -158,8 +158,8 @@ export default function Sidebar() {
       </aside>
 
       {/* ─── MOBILE HEADER ─── */}
-      <div className="sticky top-0 z-30 border-b border-zinc-200 bg-white/80 px-4 py-3 backdrop-blur-md dark:border-zinc-800 dark:bg-[#09090b]/80 lg:hidden">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-0 z-30 h-16 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-[#09090b]/80 lg:hidden">
+        <div className="flex h-full items-center justify-between">
           <Link href="/playground" className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             sarvam
           </Link>

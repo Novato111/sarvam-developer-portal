@@ -60,10 +60,9 @@ export default function RootLayout({
         >
           <div className="min-h-screen bg-white dark:bg-[#07080a]">
             <Sidebar />
-            {/* Note the updated padding here: lg:pl-[260px] */}
-         <main className="min-h-screen lg:pl-[260px]">
-  {children}
-</main>
+            <main className="min-h-[calc(100dvh-64px)] lg:min-h-screen lg:pl-[280px]">
+              {children}
+            </main>
           </div>
         </ThemeProvider>
       </body>

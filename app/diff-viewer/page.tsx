@@ -40,7 +40,6 @@ const GlobalStyles = () => (
     dangerouslySetInnerHTML={{
       __html: `
         @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600&display=swap');
       `,
     }}
   />
@@ -126,63 +125,63 @@ export default function DiffViewer() {
     <div className="flex h-screen w-full overflow-hidden bg-white font-['Geist'] text-[#09090b] dark:bg-[#09090b] dark:text-[#fafafa]">
       <GlobalStyles />
       <main className="flex min-w-0 flex-1 flex-col bg-white dark:bg-[#0f0f12]">
-        <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-5 dark:border-white/10 dark:bg-[#09090b] sm:px-7">
-          <div className="flex min-w-0 flex-col justify-center">
-            <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Model Output Diff View</h1>
-            <p className="mt-0.5 hidden truncate font-['Geist_Mono'] text-[10px] text-[#71717a] sm:block">
-              Compare two model versions on the same prompt with token-level changed words.
-            </p>
-          </div>
-          <ModeToggle isLiveMode={isLiveMode} onModeSwitch={handleModeSwitch} />
-        </header>
+          <header className="flex h-[58px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-5 dark:border-white/10 dark:bg-[#09090b] sm:px-7">
+            <div className="flex min-w-0 flex-col justify-center">
+              <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Model Output Diff View</h1>
+              <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
+                Compare two model versions on the same prompt with token-level changed words.
+              </p>
+            </div>
+            <ModeToggle isLiveMode={isLiveMode} onModeSwitch={handleModeSwitch} />
+          </header>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-5 pt-4 sm:px-7">
-          <PromptCard
-            isLiveMode={isLiveMode}
-            isGenerating={isGenerating}
-            livePrompt={livePrompt}
-            onPromptChange={setLivePrompt}
-            onModeSwitch={handleModeSwitch}
-            onScenarioSelect={loadMockScenario}
-            onCompare={handleGenerateAndCompare}
-          />
-
-          <StatsCard stats={diffStats} />
-
-          <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-2">
-            <ModelCard
-              title="Baseline Model"
-              badge="Version A"
-              tone="blue"
-              modeLabel={isLiveMode ? 'temperature 0.1' : 'baseline output'}
-              rawValue={modelAOutput}
-              onRawChange={setModelAOutput}
-              diffResult={diffResult}
-              disabled={isLiveMode || isGenerating}
-              side="removed"
+          <div className="flex min-h-0 flex-1 flex-col gap-4 px-5 pb-5 pt-4 sm:px-7">
+            <PromptCard
+              isLiveMode={isLiveMode}
+              isGenerating={isGenerating}
+              livePrompt={livePrompt}
+              onPromptChange={setLivePrompt}
+              onModeSwitch={handleModeSwitch}
+              onScenarioSelect={loadMockScenario}
+              onCompare={handleGenerateAndCompare}
             />
-            <ModelCard
-              title="Candidate Model"
-              badge="Version B"
-              tone="orange"
-              modeLabel={isLiveMode ? 'temperature 0.2' : 'candidate output'}
-              rawValue={modelBOutput}
-              onRawChange={setModelBOutput}
-              diffResult={diffResult}
-              disabled={isLiveMode || isGenerating}
-              side="added"
-            />
-          </div>
 
-          <div className="flex shrink-0 items-center gap-2 text-[11px] text-[#71717a]">
-            <Info className="h-3.5 w-3.5" />
-            <span>
-              {isLiveMode
-                ? 'Use real model compares a baseline response and a candidate response for the same prompt.'
-                : 'Sample data uses local test cases, so you can inspect token-level diffing without calling the API.'}
-            </span>
+            <StatsCard stats={diffStats} />
+
+            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-2">
+              <ModelCard
+                title="Baseline Model"
+                badge="Version A"
+                tone="blue"
+                modeLabel={isLiveMode ? 'temperature 0.1' : 'baseline output'}
+                rawValue={modelAOutput}
+                onRawChange={setModelAOutput}
+                diffResult={diffResult}
+                disabled={isLiveMode || isGenerating}
+                side="removed"
+              />
+              <ModelCard
+                title="Candidate Model"
+                badge="Version B"
+                tone="orange"
+                modeLabel={isLiveMode ? 'temperature 0.2' : 'candidate output'}
+                rawValue={modelBOutput}
+                onRawChange={setModelBOutput}
+                diffResult={diffResult}
+                disabled={isLiveMode || isGenerating}
+                side="added"
+              />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2 text-[11px] text-[#71717a]">
+              <Info className="h-3.5 w-3.5" />
+              <span>
+                {isLiveMode
+                  ? 'Use real model compares a baseline response and a candidate response for the same prompt.'
+                  : 'Sample data uses local test cases, so you can inspect token-level diffing without calling the API.'}
+              </span>
+            </div>
           </div>
-        </div>
       </main>
     </div>
   );
@@ -292,8 +291,8 @@ function PromptCard({
                 : 'border-black/5 bg-white/60 opacity-75 hover:border-black/15 hover:opacity-100 dark:border-white/10 dark:bg-[#0f0f12]/65 dark:hover:border-white/20'
             }`}
           >
-            <label htmlFor="diff-prompt" className="font-['Geist_Mono'] text-[10px] font-medium uppercase tracking-[0.08em] text-[#71717a]">
-              {isLiveMode ? 'Shared Prompt' : 'Shared Prompt Preview'}
+            <label htmlFor="diff-prompt" className="font-medium text-[10px] uppercase tracking-[0.08em] text-[#71717a]">
+              {isLiveMode ? 'Prompt' : 'Prompt preview'}
             </label>
             <textarea
               id="diff-prompt"
@@ -310,7 +309,7 @@ function PromptCard({
               <div className="flex items-center gap-2 text-[11px] text-[#71717a]">
                 <Keyboard className="h-3.5 w-3.5" />
                 <span>
-                  {isLiveMode ? 'Enter to generate · Shift + Enter for new line' : 'Select a test case, or click here to use the real model'}
+                  {isLiveMode ? 'Enter to send · Shift + Enter for new line' : 'Click an example, or click here to use the real model'}
                 </span>
               </div>
               {isLiveMode && (
@@ -320,7 +319,7 @@ function PromptCard({
                   disabled={isGenerating || !livePrompt.trim()}
                   className="inline-flex h-10 items-center justify-center rounded-full bg-[#09090b] px-5 text-sm font-semibold tracking-[-0.01em] text-white shadow-sm transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#fafafa] dark:text-[#09090b]"
                 >
-                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate and Compare'}
+                  {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate and compare'}
                 </button>
               )}
             </div>
@@ -328,7 +327,7 @@ function PromptCard({
 
           {!isLiveMode && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[14px] border border-black/5 bg-white/70 p-2.5 shadow-sm dark:border-white/10 dark:bg-[#0f0f12]">
-              <span className="px-1 text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">Diff test cases</span>
+              <span className="px-1 text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">Try an example</span>
               {mockScenarios.map((scenario, index) => (
                 <button
                   key={scenario.label}
@@ -350,10 +349,10 @@ function PromptCard({
 
 function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
   const metrics = [
-    { label: 'Compared Tokens', value: String(stats.total), sub: '', color: 'text-slate-950 dark:text-white' },
-    { label: 'Added Tokens', value: `+ ${stats.added}`, sub: `${stats.addedPct}%`, color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: 'Removed Tokens', value: `- ${stats.removed}`, sub: `${stats.removedPct}%`, color: 'text-red-600 dark:text-red-400' },
-    { label: 'Unchanged Tokens', value: String(stats.unchanged), sub: `${stats.unchangedPct}%`, color: 'text-slate-950 dark:text-white' },
+    { label: 'Total Tokens', value: String(stats.total), sub: '', color: 'text-slate-950 dark:text-white' },
+    { label: 'Added', value: `+ ${stats.added}`, sub: `${stats.addedPct}%`, color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: 'Removed', value: `- ${stats.removed}`, sub: `${stats.removedPct}%`, color: 'text-red-600 dark:text-red-400' },
+    { label: 'Unchanged', value: String(stats.unchanged), sub: `${stats.unchangedPct}%`, color: 'text-slate-950 dark:text-white' },
     { label: 'Similarity', value: `${stats.similarity}%`, sub: '', color: 'text-[#5161ff] dark:text-[#7b73ff]' },
   ];
 
@@ -368,12 +367,12 @@ function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
             {metric.label}
             {metric.label === 'Similarity' && <Info className="h-3 w-3" />}
           </div>
-          <div className={`mt-1 font-['Geist_Mono'] text-xl font-semibold tracking-normal ${metric.color}`}>{metric.value}</div>
+          <div className={`mt-1 font-medium text-xl font-semibold tracking-normal ${metric.color}`}>{metric.value}</div>
           {metric.sub && (
             <div className="mt-1 flex items-center gap-1.5 text-xs text-[#71717a]">
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                  metric.label === 'Added Tokens' ? 'bg-emerald-500' : metric.label === 'Removed Tokens' ? 'bg-red-500' : 'bg-slate-400'
+                  metric.label === 'Added' ? 'bg-emerald-500' : metric.label === 'Removed' ? 'bg-red-500' : 'bg-slate-400'
                 }`}
               />
               {metric.sub}
@@ -426,7 +425,7 @@ function ModelCard({
                 {badge}
               </span>
             </div>
-            <p className="mt-0.5 font-['Geist_Mono'] text-[11px] text-[#71717a]">{modeLabel}</p>
+            <p className="mt-0.5 font-medium text-[11px] text-[#71717a]">{modeLabel}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -459,7 +458,7 @@ function ModelCard({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4 font-['Geist_Mono'] text-xs leading-6 text-[#09090b] dark:text-[#fafafa]">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 font-medium text-xs leading-6 text-[#09090b] dark:text-[#fafafa]">
         {showDiff ? (
           <HighlightedDiff diffResult={diffResult} side={side} />
         ) : diffResult ? (

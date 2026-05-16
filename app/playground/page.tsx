@@ -145,7 +145,7 @@ function renderInlineMarkdown(text: string, keyPrefix = 'inline'): ReactNode[] {
       if (end > index) {
         flushText();
         nodes.push(
-          <code key={`${keyPrefix}-code-${index}`} className="rounded bg-black/[0.06] px-1 py-0.5 font-['Geist_Mono'] text-[0.92em] dark:bg-white/10">
+          <code key={`${keyPrefix}-code-${index}`} className="rounded bg-black/[0.06] px-1 py-0.5 font-medium text-[0.92em] dark:bg-white/10">
             {text.slice(index + 1, end)}
           </code>
         );
@@ -248,7 +248,7 @@ function AssistantMarkdown({ content, streaming = false }: { content: string; st
 
         if (block.type === 'code') {
           return (
-            <pre key={index} className="overflow-x-auto rounded-[10px] border border-black/5 bg-[#f4f4f5] p-3 font-['Geist_Mono'] text-[12px] leading-6 text-[#27272a] dark:border-white/10 dark:bg-[#09090b] dark:text-[#e4e4e7]">
+            <pre key={index} className="overflow-x-auto rounded-[10px] border border-black/5 bg-[#f4f4f5] p-3 font-medium text-[12px] leading-6 text-[#27272a] dark:border-white/10 dark:bg-[#09090b] dark:text-[#e4e4e7]">
               <code>{block.code}</code>
             </pre>
           );
@@ -265,7 +265,6 @@ function AssistantMarkdown({ content, streaming = false }: { content: string; st
 const GlobalStyles = () => (
   <style dangerouslySetInnerHTML={{__html: `
     @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&display=swap');
 
     @keyframes orbSpin    { to { transform:rotate(360deg) } }
     @keyframes orbRest    { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
@@ -291,23 +290,23 @@ const GlobalStyles = () => (
 // ─── IDLE HERO ────────────────────────────────────────────────────────────────
 const CHIPS = [
   {
-    icon: "01",
     label: "Essay test",
-    prompt: "Write a short essay explaining why on-device inference matters for enterprise engineers.",
+    hint: "Simple writing",
+    prompt: "Write a short essay about the importance of clean energy.",
   },
   {
-    icon: "02",
-    label: "Timeout case",
-    prompt: "Describe how a developer portal should handle a model timeout during a streaming response.",
+    label: "Quick summary",
+    hint: "Everyday topic",
+    prompt: "Summarize the benefits of daily exercise in five bullet points.",
   },
   {
-    icon: "03",
     label: "Fleet rollout",
+    hint: "Deployment tests",
     prompt: "Draft test cases for deploying a model update to an enterprise device fleet.",
   },
   {
-    icon: "04",
     label: "Token stream",
+    hint: "Streaming UX",
     prompt: "Explain how token-by-token streaming improves the inference playground experience.",
   },
 ];
@@ -341,10 +340,10 @@ const personaAuraGradient =
 const personaGrain =
   'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.28) 0 0.7px, transparent 1px), radial-gradient(circle at 72% 34%, rgba(24,24,24,0.18) 0 0.55px, transparent 1px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.19) 0 0.65px, transparent 1px), radial-gradient(circle at 84% 82%, rgba(24,24,24,0.14) 0 0.55px, transparent 1px)';
 
-function ModelAvatar({ mode }: { mode: 'text' | 'audio' }) {
+function ModelAvatar({ mode, size = 'sm' }: { mode: 'text' | 'audio'; size?: 'sm' | 'md' }) {
   return (
     <span
-      className="h-4 w-4 shrink-0 rounded-full border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/10"
+      className={`shrink-0 rounded-full border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)] dark:border-white/10 ${size === 'md' ? 'h-7 w-7' : 'h-4 w-4'}`}
       style={{ background: modelAvatarGradients[mode] }}
     />
   );
@@ -390,19 +389,19 @@ function ModelSelector({
   };
 
   return (
-    <div ref={selectorRef} className="relative mr-1">
+    <div ref={selectorRef} className="relative min-w-0 flex-1 sm:mr-1 sm:flex-none">
       <button
         type="button"
         onClick={() => !disabled && setOpen((value) => !value)}
         disabled={disabled}
-        className="flex h-10 min-w-[162px] items-center gap-2 rounded-full border border-black/5 bg-[#f4f4f5] px-3 py-1.5 text-left font-['Geist'] text-[13px] text-[#71717a] shadow-sm transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-[#27272a]/50 dark:text-[#a1a1aa] dark:hover:bg-white/5"
+        className="flex h-11 w-full min-w-0 items-center gap-2.5 rounded-full border border-black/5 bg-[#f4f4f5] px-3 py-1.5 text-left font-['Geist'] text-[13px] text-[#71717a] shadow-sm transition-colors hover:bg-black/5 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-[#27272a]/50 dark:text-[#a1a1aa] dark:hover:bg-white/5 sm:min-w-[176px]"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <ModelAvatar mode={activeOption.mode} />
-        <span className="flex min-w-0 flex-1 flex-col leading-none">
-          <span className="font-['Geist_Mono'] text-[9px] font-medium uppercase tracking-[0.08em] text-[#71717a]">{activeOption.label}</span>
-          <span className="mt-1 truncate text-[13px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{activeOption.model}</span>
+        <ModelAvatar mode={activeOption.mode} size="md" />
+        <span className="flex min-w-0 flex-1 flex-col justify-center leading-none">
+          <span className="text-[13px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{activeOption.model}</span>
+          <span className="mt-1 font-medium text-[10px] tracking-[-0.01em] text-[#71717a]">{activeOption.label} model</span>
         </span>
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -410,9 +409,9 @@ function ModelSelector({
       {open && (
         <div
           role="menu"
-          className="absolute bottom-full right-0 z-40 mb-2 w-[244px] overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_18px_48px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_18px_48px_rgba(0,0,0,0.42)]"
+          className="absolute bottom-full left-0 z-40 mb-2 w-full min-w-[220px] overflow-hidden rounded-xl border border-black/10 bg-white p-1.5 shadow-[0_18px_48px_rgba(15,23,42,0.18)] dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_18px_48px_rgba(0,0,0,0.42)] sm:left-auto sm:right-0 sm:w-[244px]"
         >
-          <div className="px-2 pb-1 pt-1.5 font-['Geist_Mono'] text-[10px] font-medium uppercase tracking-[0.08em] text-[#71717a]">
+          <div className="px-2 pb-1 pt-1.5 font-medium text-[10px] uppercase tracking-[0.08em] text-[#71717a]">
             Select model
           </div>
           {modelOptions.map((option) => {
@@ -430,7 +429,7 @@ function ModelSelector({
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <span className="font-['Geist'] text-[13px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{option.model}</span>
-                    <span className="rounded-md bg-[#f4f4f5] px-1.5 py-0.5 font-['Geist_Mono'] text-[9px] uppercase tracking-[0.08em] text-[#71717a] dark:bg-[#27272a]">
+                    <span className="rounded-md bg-[#f4f4f5] px-1.5 py-0.5 font-medium text-[9px] uppercase tracking-[0.08em] text-[#71717a] dark:bg-[#27272a]">
                       {option.label}
                     </span>
                   </span>
@@ -497,21 +496,25 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
 
 function IdleHero({ onChip }: { onChip: (text: string) => void }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden gap-6 -mt-12">
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden gap-6 py-6 sm:gap-7 lg:-mt-12">
       <div className="text-center relative animate-[fadeUp_0.4s_ease]">
-        <h1 className="font-['Geist'] text-[26px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.03em] mb-2 leading-[1.2]">How can I help you today?</h1>
+        <h1 className="font-['Geist'] text-[23px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.03em] mb-2 leading-[1.2] sm:text-[26px]">How can I help you today?</h1>
       </div>
-      <div className="flex gap-2 flex-wrap justify-center max-w-[560px] relative">
-        {CHIPS.map((c, i) => (
-          <button 
-            key={i} 
-            onClick={() => onChip(c.prompt)} 
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-black/5 dark:border-white/10 bg-[#fafafa] dark:bg-[#18181b] text-[#71717a] text-xs cursor-pointer font-['Geist'] transition-all hover:border-black/10 dark:hover:border-white/20 hover:text-[#09090b] dark:hover:text-[#fafafa] hover:bg-[#f4f4f5] dark:hover:bg-[#1c1c1f] tracking-[-0.01em] shadow-sm"
-            style={{ animation: `fadeUp ${0.3 + i * 0.06}s ease` }}
-          >
-            <span className="font-['Geist_Mono'] text-[10px] opacity-65">{c.icon}</span>{c.label}
-          </button>
-        ))}
+      <div className="relative flex w-full max-w-[640px] flex-col items-center gap-3">
+        <div className="text-[12px] font-medium tracking-[-0.01em] text-[#71717a]">Try with an example</div>
+        <div className="grid w-full grid-cols-1 gap-2.5 px-0 sm:grid-cols-2 sm:px-4">
+          {CHIPS.map((c, i) => (
+            <button
+              key={c.label}
+              onClick={() => onChip(c.prompt)}
+              className="group rounded-[16px] border border-black/5 bg-[#fafafa] px-4 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-[#18181b] dark:hover:border-white/20 dark:hover:bg-[#202024]"
+              style={{ animation: `fadeUp ${0.3 + i * 0.06}s ease` }}
+            >
+              <span className="block text-[13px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{c.label}</span>
+              <span className="mt-1 block text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">{c.hint}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -569,7 +572,7 @@ function MetricRow({ label, value, mono, accent, live, isIdle = true, statusColo
       <span className="font-['Geist'] text-xs text-[#71717a] tracking-[-0.01em]">{label}</span>
       <div className="flex items-center gap-1.5">
         {live && !isIdle && <div className="w-[5px] h-[5px] rounded-full animate-[statusGlow_1s_ease_infinite]" style={{ background: statusColor }} />}
-        <span className={`text-xs font-medium transition-all ${mono ? "font-['Geist_Mono'] tracking-normal" : "font-['Geist'] tracking-[-0.01em]"} ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
+        <span className={`text-xs font-medium transition-all ${mono ? "tracking-normal" : "font-['Geist'] tracking-[-0.01em]"} ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
           {value}
         </span>
       </div>
@@ -590,17 +593,56 @@ function BigMetric({ label, value, unit, accent }: BigMetricProps) {
       <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
         <div className="min-w-0 truncate font-['Geist'] text-[11px] font-medium uppercase tracking-wide text-[#71717a]">{label}</div>
         {unit && (
-          <div className="shrink-0 rounded-md bg-[#f4f4f5] px-1.5 py-0.5 font-['Geist_Mono'] text-[10px] text-[#71717a] dark:bg-[#27272a]">
+          <div className="shrink-0 rounded-md bg-[#f4f4f5] px-1.5 py-0.5 font-medium text-[10px] text-[#71717a] dark:bg-[#27272a]">
             {unit}
           </div>
         )}
       </div>
       <div className="min-w-0">
-        <span className={`block max-w-full break-all font-['Geist_Mono'] text-[28px] font-medium leading-none tracking-normal tabular-nums transition-all ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
+        <span className={`block max-w-full break-all font-medium text-[28px] leading-none tracking-normal tabular-nums transition-all ${accent ? "bg-[linear-gradient(135deg,#2563eb,#f97316)] bg-clip-text text-transparent" : "text-[#09090b] dark:text-[#fafafa]"}`}>
           {value}
         </span>
       </div>
     </div>
+  );
+}
+
+function CompactMetricsBar({
+  metrics,
+  isStreaming,
+  isThinking,
+}: {
+  metrics: SidebarMetrics;
+  isStreaming: boolean;
+  isThinking: boolean;
+}) {
+  const isActive = isStreaming || isThinking;
+  const items = [
+    { label: 'Tokens', value: metrics.tokens > 0 ? String(metrics.tokens) : '—', unit: '' },
+    { label: 'Speed', value: metrics.tps > 0 ? String(metrics.tps) : '—', unit: metrics.tps > 0 ? 'tok/s' : '' },
+    { label: 'Elapsed', value: metrics.elapsed > 0 ? String(metrics.elapsed) : '—', unit: metrics.elapsed > 0 ? 's' : '' },
+  ];
+
+  return (
+    <section className="border-b border-black/5 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#0f0f12] lg:hidden">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-[12px] font-semibold tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Live Metrics</span>
+        <span className="text-[10px] font-medium text-[#71717a]">
+          {isActive ? (isThinking ? 'Preparing' : 'Streaming') : 'Start prompting to see updates'}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {items.map((item) => (
+          <div key={item.label} className="min-w-0 rounded-[10px] border border-black/5 bg-[#fafafa] px-3 py-2 shadow-sm dark:border-white/10 dark:bg-[#18181b]">
+            <div className="truncate text-[10px] font-medium text-[#71717a]">{item.label}</div>
+            <div className="mt-1 flex min-w-0 items-baseline gap-1">
+              <span className="truncate text-[17px] font-semibold leading-none tracking-normal text-[#09090b] dark:text-[#fafafa]">{item.value}</span>
+              {item.unit && <span className="shrink-0 text-[9px] font-medium text-[#71717a]">{item.unit}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -631,21 +673,22 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
 // ─── RIGHT SIDEBAR (METRICS) ──────────────────────────────────────────────────
 function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, onClearError }: RightSidebarProps) {
   const isIdle = !isStreaming && !isThinking;
+  const hasMetrics = metrics.tokens > 0 || metrics.elapsed > 0 || metrics.tps > 0;
   const statusColor = isThinking ? "#f97316" : isStreaming ? "#22c55e" : "transparent";
 
   return (
-    <aside className="w-[260px] shrink-0 border-l border-black/5 dark:border-white/10 bg-[#fafafa] dark:bg-[#09090b] flex flex-col h-full overflow-hidden">
+    <aside className="hidden h-full w-[240px] shrink-0 flex-col overflow-hidden border-l border-black/5 bg-[#fafafa] dark:border-white/10 dark:bg-[#09090b] lg:flex xl:w-[260px]">
       
       {/* Header */}
       <div className="flex min-h-[68px] shrink-0 items-center justify-between gap-3 border-b border-black/5 px-5 py-3 dark:border-white/10">
         <div className="flex min-w-0 flex-col justify-center gap-0.5">
           <span className="font-['Geist'] text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Live Metrics</span>
-          <span className="truncate font-['Geist_Mono'] text-[10px] text-[#71717a]">Token counter, speed, and elapsed time.</span>
+          <span className="truncate font-medium text-[10px] text-[#71717a]">Token counter, speed, and elapsed time.</span>
         </div>
         
         {/* Dynamic Status Pill (Only shows when active) */}
         {!isIdle && (
-          <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-[#f4f4f5] px-2 py-[3px] font-['Geist_Mono'] text-[10px] shadow-sm animate-[fadeIn_0.2s_ease] dark:bg-[#27272a]" style={{ color: statusColor }}>
+          <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-[#f4f4f5] px-2 py-[3px] font-medium text-[10px] shadow-sm animate-[fadeIn_0.2s_ease] dark:bg-[#27272a]" style={{ color: statusColor }}>
             <div className={`w-[5px] h-[5px] rounded-full animate-[statusGlow_1s_ease_infinite]`} style={{ background: statusColor }} />
             {isThinking ? 'Preparing' : 'Streaming'}
           </div>
@@ -653,6 +696,15 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, on
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        {isIdle && !hasMetrics && (
+          <div className="mb-4 rounded-[12px] border border-black/5 bg-white px-3 py-3 shadow-sm dark:border-white/10 dark:bg-[#18181b]">
+            <div className="text-[12px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Start with a prompt</div>
+            <p className="mt-1 text-[11px] font-medium leading-5 tracking-[-0.01em] text-[#71717a]">
+              Send a text prompt or record audio to see the live token counter and speed update in real time.
+            </p>
+          </div>
+        )}
+
         
         {/* PRIMARY METRICS: Assignment Rubric Focus */}
         <div className="mb-6 flex flex-col gap-2.5">
@@ -699,7 +751,7 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, on
         {error && (
           <div className="mt-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[10px] p-[10px_12px] animate-[slideIn_0.2s_ease]">
             <div className="flex justify-between items-center mb-1.5">
-              <span className="font-['Geist_Mono'] text-[10px] text-red-500 font-medium tracking-wide">Stream Error</span>
+              <span className="font-medium text-[10px] text-red-500 tracking-wide">Stream Error</span>
               <button onClick={onClearError} className="text-red-500 hover:text-red-600 cursor-pointer text-[15px] leading-none">×</button>
             </div>
             <div className="font-['Geist'] text-[11px] text-red-600 dark:text-red-400 leading-[1.6] opacity-90">{error}</div>
@@ -809,7 +861,7 @@ export default function Playground() {
         <header className="flex min-h-[68px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-7 py-3 dark:border-white/10 dark:bg-[#09090b] sm:px-8">
           <div className="flex min-w-0 flex-col justify-center gap-0.5">
             <h1 className="font-['Geist'] text-[15px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.02em]">Inference Playground</h1>
-            <p className="mt-0.5 hidden truncate font-['Geist_Mono'] text-[10px] text-[#71717a] sm:block">
+            <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
               Test on-device inference with text input, audio input, and live token streaming.
             </p>
           </div>
@@ -898,11 +950,17 @@ export default function Playground() {
               
               {/* Left Side: Plus Icon & Helper Text */}
               <div className="flex items-center gap-3 pl-1">
-                <button className="w-9 h-9 rounded-full border border-black/5 dark:border-white/5 flex items-center justify-center text-[#71717a] dark:text-[#a1a1aa] hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <button
+                  type="button"
+                  disabled
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  className="hidden w-9 h-9 rounded-full border border-black/5 dark:border-white/5 items-center justify-center text-[#71717a] dark:text-[#a1a1aa] hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                >
                   <Plus className="w-4.5 h-4.5" />
                 </button>
                 <span className="text-[11px] text-[#a1a1aa] dark:text-[#52525b] font-['Geist'] hidden sm:inline-block select-none opacity-80">
-                  Press <kbd className="font-['Geist_Mono'] text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Shift</kbd> + <kbd className="font-['Geist_Mono'] text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Enter</kbd> for new line
+                  Press <kbd className="font-medium text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Shift</kbd> + <kbd className="font-medium text-[9px] px-1 py-0.5 rounded-sm border border-black/10 dark:border-white/10 mx-0.5">Enter</kbd> for new line
                 </span>
               </div>
               
