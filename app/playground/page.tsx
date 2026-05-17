@@ -979,10 +979,17 @@ export default function Playground() {
         <div className="relative z-10 mx-auto mb-2 w-full max-w-4xl shrink-0 px-3 pb-4 pt-2 sm:mb-4 sm:px-4 sm:pb-8">
           
           {/* Glowing Gradient Background - Stronger opacity and larger range */}
-          <div className="absolute bottom-[-8px] left-4 right-4 h-24 rounded-full bg-gradient-to-r from-blue-600/40 via-purple-600/55 to-orange-500/55 blur-[42px] transition-opacity duration-500 dark:from-blue-600/50 dark:via-purple-600/65 dark:to-orange-500/65 sm:bottom-[-10px] sm:left-[-20px] sm:right-[-20px] sm:h-[140px] sm:blur-[60px] -z-10 pointer-events-none" />
-          
-          <div className="flex flex-col overflow-visible rounded-[24px] border border-black/10 bg-[#fafafa] shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-colors focus-within:border-black/20 dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:focus-within:border-white/20 sm:rounded-[32px]">
-            
+       {/* Light mode sunrise glow */}
+<div className="absolute top-[-20px] left-[-30px] right-[-30px] h-[180px] rounded-full bg-gradient-to-b from-orange-500/80 via-[#f0a37f]/65 via-40% to-[#bfc4ff]/45 blur-[80px] transition-opacity duration-500 dark:hidden -z-10 pointer-events-none" />
+
+<div className="absolute top-[-10px] left-10 right-10 h-[120px] rounded-full bg-gradient-to-b from-[#ff7a18]/70 via-[#ffb36b]/55 to-transparent blur-[55px] opacity-90 dark:hidden pointer-events-none -z-10" />
+
+<div className="absolute top-[40px] left-0 right-0 h-[140px] rounded-full bg-gradient-to-b from-[#c8cbff]/40 via-[#d9c2ff]/25 to-transparent blur-[70px] opacity-80 dark:hidden pointer-events-none -z-10" />
+
+{/* Dark mode original glow */}
+<div className="absolute bottom-[-8px] left-4 right-4 h-24 rounded-full bg-gradient-to-r from-blue-600/40 via-purple-600/55 to-orange-500/55 blur-[42px] transition-opacity duration-500 hidden dark:block dark:from-blue-600/50 dark:via-purple-600/65 dark:to-orange-500/65 sm:bottom-[-10px] sm:left-[-20px] sm:right-[-20px] sm:h-[140px] sm:blur-[60px] -z-10 pointer-events-none" />
+
+<div className="flex flex-col overflow-visible rounded-[24px] border border-black/10 bg-[#fafafa] shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-colors focus-within:border-black/20 dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:focus-within:border-white/20 sm:rounded-[32px]">
             {/* Top Textarea Section */}
             <div className="min-h-[58px] px-4 pb-1 pt-4 sm:px-5">
               {inputMode === 'text' ? (
