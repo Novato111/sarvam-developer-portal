@@ -107,6 +107,7 @@ export default function FleetDeploy() {
     onlineDevices.length > 0 && onlineDevices.every((d) => selectedIds.has(d.id));
 
   const toggleDevice = useCallback((id: string, status: DeviceStatus) => {
+    if (isDeploying) return;
     if (status === 'offline' || status === 'error') return;
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -118,16 +119,17 @@ export default function FleetDeploy() {
       return next;
     });
     setDeployDone(false);
-  }, []);
+  }, [isDeploying]);
 
   const toggleSelectAll = useCallback(() => {
+    if (isDeploying) return;
     setSelectedIds(
       allOnlineSelected
         ? new Set()
         : new Set(onlineDevices.map((d) => d.id))
     );
     setDeployDone(false);
-  }, [allOnlineSelected, onlineDevices]);
+  }, [allOnlineSelected, isDeploying, onlineDevices]);
 
   const handleDeploy = useCallback(async () => {
     if (selectedIds.size === 0) {
@@ -172,12 +174,13 @@ export default function FleetDeploy() {
   }, [selectedIds, selectedModel, isDeploying, toast]);
 
   const handleRefresh = useCallback(() => {
+    if (isDeploying) return;
     setDevices(INITIAL_DEVICES);
     setSelectedIds(new Set());
     setDeployDone(false);
     setDeployProgress(0);
     toast({ title: 'Fleet refreshed', description: 'Device statuses reloaded.', variant: 'default' });
-  }, [toast]);
+  }, [isDeploying, toast]);
 
   const stats = {
     total:    devices.length,
@@ -203,7 +206,8 @@ export default function FleetDeploy() {
           <button
             type="button"
             onClick={handleRefresh}
-            className="inline-flex items-center gap-1.5 rounded-[9px] border border-black/10 bg-white px-3 py-1.5 text-[11px] font-medium text-[#71717a] shadow-sm transition hover:text-[#09090b] dark:border-white/10 dark:bg-[#18181b] dark:hover:text-[#fafafa]"
+            disabled={isDeploying}
+            className="inline-flex items-center gap-1.5 rounded-[9px] border border-black/10 bg-white px-3 py-1.5 text-[11px] font-medium text-[#71717a] shadow-sm transition hover:text-[#09090b] disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-[#18181b] dark:hover:text-[#fafafa]"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
@@ -230,7 +234,7 @@ export default function FleetDeploy() {
               </div>
             ))}
           </div>
-          <div className="relative isolate shrink-0 overflow-hidden rounded-[20px] border border-black/10 bg-[#fafafa] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#18181b] sm:rounded-[24px]">
+          <div className="relative z-30 shrink-0 overflow-visible rounded-[20px] border border-black/10 bg-[#fafafa] p-4 shadow-[0_12px_34px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#18181b] sm:rounded-[24px]">
             <div className="pointer-events-none absolute inset-x-6 -bottom-10 h-20 rounded-full bg-[linear-gradient(90deg,rgba(166,79,70,0.16),rgba(168,87,122,0.18),rgba(37,99,235,0.14))] blur-3xl" />
             <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="flex-1">
@@ -241,7 +245,9 @@ export default function FleetDeploy() {
                   <button
                     type="button"
                     onClick={() => setModelDropOpen((o) => !o)}
-                    className="flex w-full items-center justify-between rounded-[12px] border border-black/10 bg-white px-4 py-2.5 text-sm font-medium shadow-sm transition hover:border-black/20 dark:border-white/10 dark:bg-[#0f0f12] dark:hover:border-white/20"
+                    disabled={isDeploying}
+                    aria-expanded={modelDropOpen}
+                    className="flex w-full items-center justify-between rounded-[12px] border border-black/10 bg-white px-4 py-2.5 text-sm font-medium shadow-sm transition hover:border-black/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-[#0f0f12] dark:hover:border-white/20"
                   >
                     <span className="flex items-center gap-2">
                       <Cpu className="h-4 w-4 text-[#71717a]" />
@@ -251,7 +257,7 @@ export default function FleetDeploy() {
                     <ChevronDown className={`h-4 w-4 text-[#71717a] transition-transform ${modelDropOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {modelDropOpen && (
-                    <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[12px] border border-black/10 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-[#18181b]">
+                    <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-[12px] border border-black/10 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.14)] dark:border-white/10 dark:bg-[#18181b]">
                       {MODEL_VERSIONS.map((m) => (
                         <button
                           key={m.id}
@@ -313,60 +319,65 @@ export default function FleetDeploy() {
           </div>
           <div className="relative isolate min-h-0 overflow-hidden rounded-[16px] border border-black/5 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-[#09090b]">
             <div className="pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-overlay" style={{ backgroundImage: fineGrain, backgroundSize: '4px 4px' }} />
-            <div className="relative z-10 flex items-center gap-3 border-b border-black/5 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#0f0f12]">
-              <input
-                type="checkbox"
-                id="select-all"
-                checked={allOnlineSelected}
-                onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-zinc-300 accent-[#09090b] dark:border-zinc-600"
-                aria-label="Select all online devices"
-              />
-              <label htmlFor="select-all" className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#71717a] cursor-pointer select-none">
-                {allOnlineSelected ? 'Deselect all' : 'Select all online'}
-              </label>
-              <span className="ml-auto text-[11px] text-[#71717a]">{devices.length} devices</span>
-            </div>
-            <div className="relative z-10 grid grid-cols-[24px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_80px_60px] items-center gap-3 border-b border-black/5 bg-[#fafafa] px-4 py-2 dark:border-white/10 dark:bg-[#09090b]">
-              {['', 'Device', 'Location', 'Current Model', 'Status', 'Last Seen'].map((h) => (
-                <span key={h} className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">{h}</span>
-              ))}
-            </div>
-            <div className="relative z-10 divide-y divide-black/5 dark:divide-white/10">
-              {devices.map((device) => {
-                const isSelectable = device.status === 'online' || device.status === 'updating';
-                const isSelected   = selectedIds.has(device.id);
-                return (
-                  <div
-                    key={device.id}
-                    onClick={() => toggleDevice(device.id, device.status)}
-                    className={`grid grid-cols-[24px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_80px_60px] items-center gap-3 px-4 py-3 text-sm transition
-                      ${isSelectable ? 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]' : 'cursor-not-allowed opacity-50'}
-                      ${isSelected ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}
-                    `}
-                    role="row"
-                    aria-selected={isSelected}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      disabled={!isSelectable}
-                      onChange={() => toggleDevice(device.id, device.status)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-4 w-4 rounded border-zinc-300 accent-[#09090b] dark:border-zinc-600"
-                      aria-label={`Select ${device.name}`}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium text-[13px] text-[#09090b] dark:text-[#fafafa]">{device.name}</p>
-                      <p className="truncate text-[10px] text-[#71717a]">{device.id}</p>
-                    </div>
-                    <span className="truncate text-[12px] text-[#71717a]">{device.location}</span>
-                    <span className="truncate text-[12px] font-medium text-[#09090b] dark:text-[#fafafa]">{device.currentModel}</span>
-                    <StatusBadge status={device.status} />
-                    <span className="text-[11px] text-[#71717a]">{device.lastSeen}</span>
-                  </div>
-                );
-              })}
+            <div className="relative z-10 overflow-x-auto">
+              <div className="min-w-[760px]">
+                <div className="flex items-center gap-3 border-b border-black/5 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#0f0f12]">
+                  <input
+                    type="checkbox"
+                    id="select-all"
+                    checked={allOnlineSelected}
+                    disabled={isDeploying}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-zinc-300 accent-[#09090b] disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-600"
+                    aria-label="Select all online devices"
+                  />
+                  <label htmlFor="select-all" className={`text-[11px] font-semibold uppercase tracking-[0.08em] text-[#71717a] select-none ${isDeploying ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                    {allOnlineSelected ? 'Deselect all' : 'Select all online'}
+                  </label>
+                  <span className="ml-auto text-[11px] text-[#71717a]">{devices.length} devices</span>
+                </div>
+                <div className="grid grid-cols-[24px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_80px_60px] items-center gap-3 border-b border-black/5 bg-[#fafafa] px-4 py-2 dark:border-white/10 dark:bg-[#09090b]">
+                  {['', 'Device', 'Location', 'Current Model', 'Status', 'Last Seen'].map((h) => (
+                    <span key={h} className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">{h}</span>
+                  ))}
+                </div>
+                <div className="divide-y divide-black/5 dark:divide-white/10">
+                  {devices.map((device) => {
+                    const isSelectable = !isDeploying && (device.status === 'online' || device.status === 'updating');
+                    const isSelected   = selectedIds.has(device.id);
+                    return (
+                      <div
+                        key={device.id}
+                        onClick={() => toggleDevice(device.id, device.status)}
+                        className={`grid grid-cols-[24px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_80px_60px] items-center gap-3 px-4 py-3 text-sm transition
+                          ${isSelectable ? 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02]' : 'cursor-not-allowed opacity-50'}
+                          ${isSelected ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}
+                        `}
+                        role="row"
+                        aria-selected={isSelected}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={!isSelectable}
+                          onChange={() => toggleDevice(device.id, device.status)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-4 w-4 rounded border-zinc-300 accent-[#09090b] disabled:cursor-not-allowed dark:border-zinc-600"
+                          aria-label={`Select ${device.name}`}
+                        />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-[13px] text-[#09090b] dark:text-[#fafafa]">{device.name}</p>
+                          <p className="truncate text-[10px] text-[#71717a]">{device.id}</p>
+                        </div>
+                        <span className="truncate text-[12px] text-[#71717a]">{device.location}</span>
+                        <span className="truncate text-[12px] font-medium text-[#09090b] dark:text-[#fafafa]">{device.currentModel}</span>
+                        <StatusBadge status={device.status} />
+                        <span className="text-[11px] text-[#71717a]">{device.lastSeen}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 items-start gap-2 text-[11px] leading-5 text-[#71717a] sm:items-center">

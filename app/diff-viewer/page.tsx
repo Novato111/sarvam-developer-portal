@@ -129,23 +129,32 @@ export default function DiffViewer() {
           throw new Error(typeof data.error === 'string' ? data.error : 'Compare request failed');
         }
 
-        if (data.modelA && data.modelB) {
-          setModelAOutput(data.modelA);
-          setModelBOutput(data.modelB);
-          setDiffResult(computeDiff(data.modelA, data.modelB));
+        const modelA = typeof data.modelA === 'string' ? data.modelA.trim() : '';
+        const modelB = typeof data.modelB === 'string' ? data.modelB.trim() : '';
+
+        if (modelA && modelB) {
+          setModelAOutput(modelA);
+          setModelBOutput(modelB);
+          setDiffResult(computeDiff(modelA, modelB));
           toast({
             title: 'Comparison ready',
             description: 'Model outputs updated.',
             variant: 'success',
           });
         } else {
-          throw new Error('No comparison returned');
+          throw new Error(
+            typeof data.error === 'string'
+              ? data.error
+              : 'Sarvam returned an empty comparison. Try again.'
+          );
         }
       } catch (error) {
         console.error('Failed to fetch live comparison', error);
+        const message = error instanceof Error ? error.message : '';
+        const timedOut = message.includes('timed out');
         toast({
-          title: error instanceof Error && error.message.includes('timed out') ? 'Comparison timed out' : 'Comparison failed',
-          description: error instanceof Error && error.message.includes('timed out') ? 'Sarvam is busy. Try again shortly.' : 'Try again in a moment.',
+          title: timedOut ? 'Comparison timed out' : 'Comparison failed',
+          description: message || 'Try again in a moment.',
           variant: 'destructive',
         });
       } finally {
@@ -505,9 +514,6 @@ function AlgorithmMetric() {
           <div className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">Diff Algorithm</div>
         </div>
         <div className="mt-1.5 text-[14px] font-semibold leading-none tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Token-level LCS</div>
-        <p className="mt-1.5 line-clamp-2 text-[10px] font-medium leading-4 tracking-[-0.01em] text-[#71717a]">
-          Custom dynamic programming diff. Preserves spacing and highlights changed tokens.
-        </p>
         <div className="mt-auto pt-2">
           <div className="h-1 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
             <div className="h-full w-full rounded-full bg-[linear-gradient(90deg,#789b42,#8f9df4,#e4765b)]" />

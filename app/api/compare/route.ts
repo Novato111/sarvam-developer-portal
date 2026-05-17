@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const COMPARE_TIMEOUT_MS = 15_000;
+const COMPARE_TIMEOUT_MS = 30_000;
 const TIMEOUT_ERROR_MESSAGE = 'Sarvam comparison request timed out';
+const EMPTY_OUTPUT_ERROR_MESSAGE = 'Sarvam returned an empty comparison output';
+
+type SarvamChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: unknown;
+    };
+    text?: unknown;
+  }>;
+  output_text?: unknown;
+  content?: unknown;
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,9 +45,17 @@ export async function POST(req: NextRequest) {
           }),
         });
 
-        if (!response.ok) throw new Error('Sarvam API failed');
-        const data = await response.json();
-        return data.choices[0].message.content;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Sarvam compare API failed:', response.status, errorText);
+          throw new Error('Sarvam API failed');
+        }
+
+        const data = (await response.json()) as SarvamChatResponse;
+        const content = extractAssistantText(data);
+        if (!content) throw new Error(EMPTY_OUTPUT_ERROR_MESSAGE);
+
+        return content;
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
           throw new Error(TIMEOUT_ERROR_MESSAGE);
@@ -70,6 +90,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (error instanceof Error && error.message === EMPTY_OUTPUT_ERROR_MESSAGE) {
+      return NextResponse.json(
+        { error: 'Sarvam returned an empty comparison. Try again in a moment.' },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to generate comparisons' }, { status: 500 });
   }
+}
+
+function extractAssistantText(data: SarvamChatResponse) {
+  const firstChoice = data.choices?.[0];
+  const content = firstChoice?.message?.content ?? firstChoice?.text ?? data.output_text ?? data.content;
+
+  if (typeof content === 'string') return content.trim();
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') return part.text;
+        return '';
+      })
+      .join('')
+      .trim();
+  }
+
+  return '';
 }
