@@ -1,7 +1,5 @@
-
-// src/hooks/useStream.ts
 import { useCallback, useRef, useState } from 'react';
-import { useToast } from '@/componets/ToastProvider';
+import { useToast } from '@/components/ToastProvider';
 
 export interface StreamMessage {
   role: 'user' | 'assistant' | 'system';
@@ -23,7 +21,7 @@ export function useStream() {
   const startStream = useCallback(async (input: string | StreamMessage[], callbacks?: StreamCallbacks) => {
     setIsStreaming(true);
     setError(null);
-    setOutput(''); // Clear previous run
+    setOutput('');
 
     const startTime = performance.now();
     let localTokenCount = 0;
@@ -32,6 +30,7 @@ export function useStream() {
     let animationFrameId: number | null = null;
     setMetrics({ tokenCount: 0, startTime });
 
+    // Keep stream updates in sync with the browser paint cycle.
     const flushPendingText = () => {
       if (!pendingText) return;
 
@@ -64,35 +63,25 @@ export function useStream() {
         throw new Error('Network error or no body returned');
       }
 
-      // 1. Get the reader from the response stream
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
 
-      // 2. Infinite loop to read chunks as they arrive
       while (true) {
         const { done, value } = await reader.read();
         
-        if (done) break; // The stream is finished!
+        if (done) break;
 
-        // 3. Decode the byte array into a string chunk
         const chunk = decoder.decode(value, { stream: true });
-        
-        // Note: OpenAI-compatible streams send data in Server-Sent Events format like: "data: {"choices": [{"delta": {"content": "hello"}}]}\n\n"
-        // We need to parse that. For now, let's simulate appending the raw text logic.
-        // I will provide the precise SSE parsing logic in the next step, but conceptually:
-        
         const extractedText = parseSSEChunk(chunk); 
         if (extractedText) {
              fullText += extractedText;
              pendingText += extractedText;
 
-             // Update metrics
-             localTokenCount += extractedText.trim() ? extractedText.trim().split(/\s+/).length : 0; // Rough token estimation
+             localTokenCount += extractedText.trim() ? extractedText.trim().split(/\s+/).length : 0;
              scheduleFlush();
         }
       }
     } catch (err: unknown) {
-      // NEW: Catch the specific AbortError so we don't treat it as a crash
       if (err instanceof Error && err.name === 'AbortError') {
         setError(null);
         toast({
@@ -115,11 +104,10 @@ export function useStream() {
       }
       flushPendingText();
       setIsStreaming(false);
-      abortControllerRef.current = null; // Cleanup
+      abortControllerRef.current = null;
     }
   }, [toast]);
 
-  // NEW: Function to manually trigger the abort
   const stopStream = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -129,7 +117,7 @@ export function useStream() {
   return { output, setOutput, isStreaming, error, metrics, startStream, stopStream };
 }
 
-// Helper to parse the data strings (OpenAI spec format)
+// Sarvam streams chat chunks as SSE data lines, so we pull out only the delta text.
 function parseSSEChunk(chunk: string): string {
     const lines = chunk.split('\n').filter(line => line.trim() !== '');
     let text = '';

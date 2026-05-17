@@ -1,4 +1,3 @@
-// src/app/diff-viewer/page.tsx
 'use client';
 
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -11,7 +10,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { computeDiff, DiffToken } from '../utils/diffAlgorithm';
-import { useToast } from '@/componets/ToastProvider';
+import { useToast } from '@/components/ToastProvider';
 
 const mockScenarios = [
   {

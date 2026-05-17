@@ -1,7 +1,6 @@
-// src/app/api/chat/route.ts
 import { NextRequest } from 'next/server';
 
-export const runtime = 'edge'; // Edge runtime is heavily optimized for streaming
+export const runtime = 'edge';
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
@@ -20,7 +19,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 1. Call Sarvam's API
     const sarvamResponse = await fetch('https://api.sarvam.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -28,9 +26,9 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${process.env.SARVAM_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'sarvam-30b', // Their fastest model for real-time chat
+        model: 'sarvam-30b',
         messages,
-        stream: true, // CRITICAL: This tells Sarvam not to wait for the full response
+        stream: true,
       }),
     });
 
@@ -38,7 +36,6 @@ export async function POST(req: NextRequest) {
       throw new Error(`Sarvam API error: ${sarvamResponse.statusText}`);
     }
 
-    // 2. We don't wait for JSON. We take the raw stream and pass it directly to the frontend.
     const stream = sarvamResponse.body;
 
     return new Response(stream, {

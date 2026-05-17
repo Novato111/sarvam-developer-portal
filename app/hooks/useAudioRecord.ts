@@ -1,6 +1,5 @@
-// src/hooks/useAudioRecord.ts
 import { useState, useRef, useCallback } from 'react';
-import { useToast } from '@/componets/ToastProvider';
+import { useToast } from '@/components/ToastProvider';
 
 const MIN_RECORDING_MS = 800;
 const MIN_AUDIO_BYTES = 900;
@@ -11,8 +10,7 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   
-  // We use refs to hold onto the recorder and audio chunks across renders
-  // without triggering unnecessary re-renders.
+  // The recorder and chunks need to survive re-renders without changing the UI.
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingStartedAtRef = useRef<number>(0);
@@ -20,33 +18,26 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
   const startRecording = useCallback(async () => {
     setAudioError(null);
     try {
-      // 1. Request microphone access from the browser
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // 2. Initialize the MediaRecorder
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = []; // Clear previous recordings
+      audioChunksRef.current = [];
       recordingStartedAtRef.current = Date.now();
 
-      // 3. Collect audio chunks as they are generated
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
 
-      // 4. Handle what happens when we stop recording
-      // src/hooks/useAudioRecord.ts (Updated segment)
-
       mediaRecorder.onstop = async () => {
-        // Let the browser decide the blob type based on the recorded chunks to avoid mime-type crashes
-        // Explicitly force the webm type so it matches our backend route
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const recordedMs = Date.now() - recordingStartedAtRef.current;
         stream.getTracks().forEach(track => track.stop());
         mediaRecorderRef.current = null;
 
+        // Very short recordings usually produce empty transcripts.
         if (
           recordedMs < MIN_RECORDING_MS ||
           audioChunksRef.current.length === 0 ||
@@ -65,7 +56,6 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
         setIsTranscribing(true);
 
         try {
-          // Send to our secure Next.js route instead of Sarvam directly
           const formData = new FormData();
           formData.append('file', audioBlob);
 
@@ -109,7 +99,6 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
           setIsTranscribing(false);
         }
       };
-      // 5. Start the recording process
       mediaRecorder.start();
       setIsRecording(true);
 

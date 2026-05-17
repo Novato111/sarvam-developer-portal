@@ -1,4 +1,3 @@
-// src/components/Sidebar.tsx
 'use client';
 
 import { useSyncExternalStore } from 'react';
@@ -11,7 +10,8 @@ import {
   GitCompare, 
   BookOpen, 
   Moon, 
-  Sun 
+  Sun,
+  Rocket,
 } from 'lucide-react';
 
 const sarvamAvatarGradient =
@@ -43,17 +43,17 @@ export default function Sidebar() {
 
   const navItems = [
     { name: 'Inference Playground', href: '/playground', icon: Terminal },
-    { name: 'Model Output Diff', href: '/diff-viewer', icon: GitCompare },
+    { name: 'Model Output Diff',    href: '/diff-viewer', icon: GitCompare },
   ];
+
   const isDocumentationActive = pathname.startsWith('/documentation');
+  const isFleetActive         = pathname.startsWith('/fleet-deploy');
 
   return (
     <>
-      {/* ─── DESKTOP SIDEBAR ─── */}
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[256px] flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#09090b] lg:flex select-none">
         
         <div className="flex flex-col px-3.5 pb-3 pt-5">
-          {/* Header */}
           <div className="mb-2.5 flex items-center px-1">
             <Link href="/playground" className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               sarvam
@@ -61,7 +61,6 @@ export default function Sidebar() {
           </div>
           <div className="mx-1 mb-3.5 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800" />
 
-          {/* Workspace Card */}
           <div className="rounded-[11px] border border-zinc-200 bg-zinc-50/50 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
             <button className="flex w-full items-center justify-between rounded-[9px] p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
               <div className="flex items-center gap-2.5">
@@ -80,8 +79,8 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Navigation Links */}
         <nav className="flex-1 space-y-1 px-3.5 py-1.5">
+
           <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Developer Workflow
           </div>
@@ -102,13 +101,28 @@ export default function Sidebar() {
               </Link>
             );
           })}
+
+          <div className="mx-1 my-3 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800" />
+
+          <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+            Fleet Management
+          </div>
+          <Link
+            href="/fleet-deploy"
+            className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium transition-all ${
+              isFleetActive
+                ? 'bg-zinc-100 text-zinc-900 shadow-sm dark:bg-zinc-800/80 dark:text-zinc-50'
+                : 'text-zinc-600 hover:bg-zinc-100/50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100'
+            }`}
+          >
+            <Rocket className={`h-3.5 w-3.5 shrink-0 ${isFleetActive ? 'text-zinc-900 dark:text-zinc-50' : 'text-zinc-500 dark:text-zinc-400'}`} />
+            Fleet Deploy
+          </Link>
+
         </nav>
 
-        {/* Bottom Section */}
         <div className="flex flex-col px-3.5 pb-5">
-          
-     
-          {/* Documentation & Dark Mode Card */}
+
           <div className="mb-3 rounded-[11px] border border-zinc-200 bg-zinc-50/50 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
             <Link
               href="/documentation"
@@ -127,8 +141,6 @@ export default function Sidebar() {
                 <Moon className="h-3.5 w-3.5 shrink-0" />
                 Dark Mode
               </div>
-              
-              {/* Shadcn Switch */}
               {mounted && (
                 <button 
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -140,7 +152,6 @@ export default function Sidebar() {
             </div>
           </div>
 
-          {/* User Profile Card */}
           <div className="rounded-[11px] border border-zinc-200 bg-white p-1 shadow-sm dark:border-zinc-800 dark:bg-[#09090b]">
             <button className="flex w-full items-center justify-between rounded-[9px] p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
               <div className="flex min-w-0 items-center gap-2.5">
@@ -161,7 +172,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* ─── MOBILE HEADER ─── */}
       <div className="sticky top-0 z-30 h-16 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur-md dark:border-zinc-800 dark:bg-[#09090b]/80 lg:hidden">
         <div className="flex h-full items-center justify-between">
           <Link href="/playground" className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
@@ -183,6 +193,15 @@ export default function Sidebar() {
                 </Link>
               );
             })}
+            <Link
+              href="/fleet-deploy"
+              className={`grid h-9 w-9 place-items-center rounded-lg transition-colors ${
+                isFleetActive ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50' : 'text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800'
+              }`}
+              aria-label="Fleet Deploy"
+            >
+              <Rocket className="h-4 w-4" />
+            </Link>
             {mounted && (
               <button
                 type="button"

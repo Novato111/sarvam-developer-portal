@@ -1,4 +1,3 @@
-// src/app/api/compare/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
 const COMPARE_TIMEOUT_MS = 15_000;
@@ -12,7 +11,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
-    // Helper function to call Sarvam's API
     const fetchModelOutput = async (temperature: number, systemPrompt?: string) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), COMPARE_TIMEOUT_MS);
@@ -29,7 +27,7 @@ export async function POST(req: NextRequest) {
           },
           signal: controller.signal,
           body: JSON.stringify({
-            model: 'sarvam-30b', // Fast and reliable
+            model: 'sarvam-30b',
             temperature: temperature,
             messages: messages,
           }),
@@ -48,15 +46,13 @@ export async function POST(req: NextRequest) {
         clearTimeout(timeout);
       }
     };
-// The Magic: Run both API calls in PARALLEL with Length Constraints
+
+    // Run both requests together so the diff view does not wait on them one by one.
     const [outputA, outputB] = await Promise.all([
-      // Model A (Strict base model, constrained length)
       fetchModelOutput(
         0.1, 
         "You are a highly factual assistant. Limit your response to exactly 3 or 4 concise sentences. Do not use filler words."
       ),
-      
-      // Model B (Slightly creative model, same length constraints)
       fetchModelOutput(
         0.2, 
         "You are a helpful assistant. Answer the prompt using slightly different vocabulary or synonyms, but keep the exact same core meaning. Limit your response to exactly 3 or 4 concise sentences."

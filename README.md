@@ -146,7 +146,7 @@ app/
   playground/page.tsx      Inference playground
   utils/diffAlgorithm.ts   Custom token-level diff algorithm
 
-componets/
+components/
   Sidebar.tsx              App navigation and theme controls
   ThemeProvider.tsx        Dark mode provider
   ToastProvider.tsx        Minimal toast system

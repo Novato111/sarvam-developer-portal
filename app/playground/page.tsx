@@ -21,6 +21,7 @@ type ChatMessage = { id: string; role: 'user' | 'assistant'; content: string; };
 function createMessageId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 const subscribeHydration = () => () => {};
 function useIsHydrated() { return useSyncExternalStore(subscribeHydration, () => true, () => false); }
+
 type MarkdownBlock =
   | { type: 'heading'; level: number; text: string }
   | { type: 'paragraph'; text: string }
@@ -42,6 +43,7 @@ function isMarkdownBlockStart(line: string) {
   );
 }
 
+// This renderer handles the small Markdown subset model answers usually use.
 function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
   const blocks: MarkdownBlock[] = [];
@@ -262,7 +264,6 @@ function AssistantMarkdown({ content, streaming = false }: { content: string; st
   );
 }
 
-// ─── GLOBAL STYLES & ANIMATIONS ────────────────────────────────────────────────
 const GlobalStyles = memo(function GlobalStyles() {
   return (
     <style dangerouslySetInnerHTML={{__html: `
@@ -290,7 +291,6 @@ const GlobalStyles = memo(function GlobalStyles() {
   );
 });
 
-// ─── IDLE HERO ────────────────────────────────────────────────────────────────
 const CHIPS = [
   {
     label: "Essay test",
@@ -531,7 +531,6 @@ const IdleHero = memo(function IdleHero({ onChip }: { onChip: (text: string) => 
   );
 });
 
-// ─── THINKING PERSONA ─────────────────────────────────────────────────────────
 function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'streaming'|'done', streamedText: string }) {
   const isThinking  = state === "thinking";
   const isStreaming  = state === "streaming";
@@ -543,7 +542,6 @@ function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'st
     <div className="flex gap-2.5 items-start animate-[fadeUp_0.2s_ease]">
       <PersonaAvatar state={state} />
 
-      {/* Bubble */}
       <div className={`max-w-[86%] break-words bg-[#fafafa] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[3px_12px_12px_12px] text-sm leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] animate-[fadeIn_0.18s_ease] tracking-[-0.01em] shadow-sm sm:max-w-[78%] ${showDots ? 'px-4 py-[11px] min-w-[68px]' : 'px-4 py-2.5'}`}>
         {showDots && (
           <>
@@ -687,7 +685,6 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
   );
 }
 
-// ─── RIGHT SIDEBAR (METRICS) ──────────────────────────────────────────────────
 function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSidebarProps) {
   const isIdle = !isStreaming && !isThinking;
   const hasMetrics = metrics.tokens > 0 || metrics.elapsed > 0 || metrics.tps > 0;
@@ -696,14 +693,12 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSi
   return (
     <aside className="hidden h-full w-[240px] shrink-0 flex-col overflow-hidden border-l border-black/5 bg-[#fafafa] dark:border-white/10 dark:bg-[#09090b] lg:flex xl:w-[260px]">
       
-      {/* Header */}
       <div className="flex min-h-[68px] shrink-0 items-center justify-between gap-3 border-b border-black/5 px-5 py-3 dark:border-white/10">
         <div className="flex min-w-0 flex-col justify-center gap-0.5">
           <span className="font-['Geist'] text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Live Metrics</span>
           <span className="truncate font-medium text-[10px] text-[#71717a]">Token counter, speed, and elapsed time.</span>
         </div>
         
-        {/* Dynamic Status Pill (Only shows when active) */}
         {!isIdle && (
           <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-[#f4f4f5] px-2 py-[3px] font-medium text-[10px] shadow-sm animate-[fadeIn_0.2s_ease] dark:bg-[#27272a]" style={{ color: statusColor }}>
             <div className={`w-[5px] h-[5px] rounded-full animate-[statusGlow_1s_ease_infinite]`} style={{ background: statusColor }} />
@@ -729,7 +724,6 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSi
         )}
 
         
-        {/* PRIMARY METRICS: Assignment Rubric Focus */}
         <div className="mb-6 flex flex-col gap-2.5">
           <BigMetric 
             label="Tokens Generated" 
@@ -749,13 +743,11 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSi
           />
         </div>
 
-        {/* COLLAPSIBLE CONFIGURATION */}
         <AccordionSection title="Multi-Modal Input" defaultOpen={true}>
           <MetricRow label="Active Model" value={model} mono />
           <MetricRow label="Input Mode"   value={mode === 'text' ? 'Text' : 'Audio'} mono={false} />
         </AccordionSection>
 
-        {/* COLLAPSIBLE RUNTIME */}
         <AccordionSection title="Streaming Response">
           <MetricRow label="Provider"  value="Sarvam AI" mono={false} />
           <MetricRow label="Context"   value="32k tokens" mono />
@@ -763,7 +755,6 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSi
           <MetricRow label="Stream"    value="SSE (Fetch)" mono />
         </AccordionSection>
 
-        {/* COLLAPSIBLE ENDPOINT */}
         <AccordionSection title="Endpoint">
           <MetricRow label="Base URL" value="api.sarvam.ai" mono />
           <MetricRow label="Route"    value="/v1/chat"      mono />
@@ -782,7 +773,6 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSi
   );
 }
 
-// ─── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function Playground() {
   const [inputMode, setInputMode] = useState<'text' | 'audio'>('text');
   const [promptText, setPromptText] = useState('');
@@ -904,10 +894,8 @@ export default function Playground() {
     <div className="flex h-[calc(100dvh-64px)] w-full overflow-hidden bg-white font-sans dark:bg-[#09090b] lg:h-screen">
       <GlobalStyles />
       
-      {/* ─── CENTER CHAT AREA ──────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0f0f12]">
         
-        {/* Header */}
         <header className="flex min-h-[64px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-col justify-center gap-0.5">
             <h1 className="font-['Geist'] text-[15px] font-semibold tracking-normal text-[#09090b] dark:text-[#fafafa]">Inference Playground</h1>
@@ -935,7 +923,6 @@ export default function Playground() {
 
         <CompactMetricsBar metrics={sidebarMetrics} isStreaming={isStreaming} isThinking={isThinking} />
 
-        {/* Chat Area */}
         <div
           className="relative flex flex-1 flex-col overflow-y-auto px-4 py-4 sm:p-5"
           aria-live="polite"
@@ -975,22 +962,16 @@ export default function Playground() {
           )}
         </div>
 
-        {/* ─── ENHANCED INPUT BOX ─── */}
         <div className="relative z-10 mx-auto mb-2 w-full max-w-4xl shrink-0 px-3 pb-4 pt-2 sm:mb-4 sm:px-4 sm:pb-8">
-          
-          {/* Glowing Gradient Background - Stronger opacity and larger range */}
-       {/* Light mode sunrise glow */}
 <div className="absolute top-[-20px] left-[-30px] right-[-30px] h-[180px] rounded-full bg-gradient-to-b from-orange-500/80 via-[#f0a37f]/65 via-40% to-[#bfc4ff]/45 blur-[80px] transition-opacity duration-500 dark:hidden -z-10 pointer-events-none" />
 
 <div className="absolute top-[-10px] left-10 right-10 h-[120px] rounded-full bg-gradient-to-b from-[#ff7a18]/70 via-[#ffb36b]/55 to-transparent blur-[55px] opacity-90 dark:hidden pointer-events-none -z-10" />
 
 <div className="absolute top-[40px] left-0 right-0 h-[140px] rounded-full bg-gradient-to-b from-[#c8cbff]/40 via-[#d9c2ff]/25 to-transparent blur-[70px] opacity-80 dark:hidden pointer-events-none -z-10" />
 
-{/* Dark mode original glow */}
 <div className="absolute bottom-[-8px] left-4 right-4 h-24 rounded-full bg-gradient-to-r from-blue-600/40 via-purple-600/55 to-orange-500/55 blur-[42px] transition-opacity duration-500 hidden dark:block dark:from-blue-600/50 dark:via-purple-600/65 dark:to-orange-500/65 sm:bottom-[-10px] sm:left-[-20px] sm:right-[-20px] sm:h-[140px] sm:blur-[60px] -z-10 pointer-events-none" />
 
 <div className="flex flex-col overflow-visible rounded-[24px] border border-black/10 bg-[#fafafa] shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-colors focus-within:border-black/20 dark:border-white/10 dark:bg-[#18181b] dark:shadow-[0_8px_30px_rgb(0,0,0,0.3)] dark:focus-within:border-white/20 sm:rounded-[32px]">
-            {/* Top Textarea Section */}
             <div className="min-h-[58px] px-4 pb-1 pt-4 sm:px-5">
               {inputMode === 'text' ? (
                 <textarea
@@ -1010,10 +991,8 @@ export default function Playground() {
               )}
             </div>
 
-            {/* Bottom Toolbar Section */}
             <div className="flex flex-col gap-2 px-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
               
-              {/* Left Side: Plus Icon & Helper Text */}
               <div className="flex items-center gap-3 pl-1">
                 <button
                   type="button"
@@ -1029,7 +1008,6 @@ export default function Playground() {
                 </span>
               </div>
               
-              {/* Right Side: Tools & Send */}
               <div className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:flex-nowrap">
                 
                 <ModelSelector
@@ -1038,7 +1016,6 @@ export default function Playground() {
                   disabled={isStreaming || isThinking || isRecording || isTranscribing}
                 />
 
-                {/* Input Mode Toggle */}
                 <div className="inline-flex h-10 shrink-0 items-center rounded-full border border-black/5 bg-[#f4f4f5] p-0.5 shadow-sm dark:border-white/10 dark:bg-[#27272a]/50">
                   <button 
                     type="button"
@@ -1061,7 +1038,6 @@ export default function Playground() {
                   </button>
                 </div>
                 
-                {/* Send Button */}
                 <button 
                   type="button"
                   onClick={handleComposerAction}
@@ -1087,7 +1063,6 @@ export default function Playground() {
         </div>
       </main>
 
-      {/* ─── RIGHT METRICS PANEL ───────────────────────────────────────────── */}
       <RightSidebar 
         metrics={sidebarMetrics} 
         isStreaming={isStreaming} 
