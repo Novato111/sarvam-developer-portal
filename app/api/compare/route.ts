@@ -1,6 +1,9 @@
 // src/app/api/compare/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+const COMPARE_TIMEOUT_MS = 15_000;
+const TIMEOUT_ERROR_MESSAGE = 'Sarvam comparison request timed out';
+
 export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
@@ -11,26 +14,39 @@ export async function POST(req: NextRequest) {
 
     // Helper function to call Sarvam's API
     const fetchModelOutput = async (temperature: number, systemPrompt?: string) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), COMPARE_TIMEOUT_MS);
       const messages = [];
       if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
       messages.push({ role: 'user', content: prompt });
 
-      const response = await fetch('https://api.sarvam.ai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SARVAM_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'sarvam-30b', // Fast and reliable
-          temperature: temperature,
-          messages: messages,
-        }),
-      });
+      try {
+        const response = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.SARVAM_API_KEY}`,
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model: 'sarvam-30b', // Fast and reliable
+            temperature: temperature,
+            messages: messages,
+          }),
+        });
 
-      if (!response.ok) throw new Error('Sarvam API failed');
-      const data = await response.json();
-      return data.choices[0].message.content;
+        if (!response.ok) throw new Error('Sarvam API failed');
+        const data = await response.json();
+        return data.choices[0].message.content;
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error(TIMEOUT_ERROR_MESSAGE);
+        }
+
+        throw error;
+      } finally {
+        clearTimeout(timeout);
+      }
     };
 // The Magic: Run both API calls in PARALLEL with Length Constraints
     const [outputA, outputB] = await Promise.all([
@@ -51,6 +67,13 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Comparison Error:', error);
+    if (error instanceof Error && error.message === TIMEOUT_ERROR_MESSAGE) {
+      return NextResponse.json(
+        { error: 'Comparison timed out. Try again in a moment.' },
+        { status: 504 }
+      );
+    }
+
     return NextResponse.json({ error: 'Failed to generate comparisons' }, { status: 500 });
   }
 }

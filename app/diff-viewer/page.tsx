@@ -1,7 +1,7 @@
 // src/app/diff-viewer/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   Copy,
   Database,
@@ -11,6 +11,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { computeDiff, DiffToken } from '../utils/diffAlgorithm';
+import { useToast } from '@/componets/ToastProvider';
 
 const mockScenarios = [
   {
@@ -35,15 +36,17 @@ const mockScenarios = [
   },
 ];
 
-const GlobalStyles = () => (
-  <style
-    dangerouslySetInnerHTML={{
-      __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
-      `,
-    }}
-  />
-);
+const GlobalStyles = memo(function GlobalStyles() {
+  return (
+    <style
+      dangerouslySetInnerHTML={{
+        __html: `
+          @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
+        `,
+      }}
+    />
+  );
+});
 
 const grainTexture =
   'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.34) 0 0.7px, transparent 1px), radial-gradient(circle at 72% 34%, rgba(20,20,20,0.18) 0 0.55px, transparent 1px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.22) 0 0.65px, transparent 1px), radial-gradient(circle at 84% 82%, rgba(20,20,20,0.12) 0 0.55px, transparent 1px)';
@@ -58,7 +61,17 @@ const activeToggleGradients = {
   live: 'radial-gradient(circle at 24% 18%, rgba(255,202,152,0.8) 0%, rgba(214,102,77,0.62) 35%, transparent 60%), radial-gradient(circle at 82% 82%, rgba(177,91,121,0.66) 0%, transparent 45%), linear-gradient(135deg,#a64f46 0%,#cf6a54 52%,#a8577a 100%)',
 };
 
+const exampleChipGradients = [
+  'radial-gradient(circle at 18% 12%, rgba(246,240,171,0.96) 0%, rgba(142,174,77,0.88) 34%, transparent 62%), radial-gradient(circle at 92% 85%, rgba(237,225,149,0.92) 0%, transparent 42%), linear-gradient(135deg,#5f8730 0%,#94b75a 55%,#d9d08c 100%)',
+  'radial-gradient(circle at 18% 20%, rgba(221,228,255,0.98) 0%, rgba(129,145,237,0.9) 38%, transparent 64%), radial-gradient(circle at 88% 86%, rgba(255,210,134,0.84) 0%, transparent 46%), linear-gradient(135deg,#7889ec 0%,#aab7ff 56%,#f1bd67 100%)',
+  'radial-gradient(circle at 20% 18%, rgba(255,218,161,0.96) 0%, rgba(224,116,83,0.9) 36%, transparent 62%), radial-gradient(circle at 88% 82%, rgba(174,88,124,0.84) 0%, transparent 46%), linear-gradient(135deg,#bd5548 0%,#e4755c 52%,#a8577a 100%)',
+];
+
+const fineChipGrain =
+  'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.16) 0 0.35px, transparent 0.6px), radial-gradient(circle at 72% 34%, rgba(0,0,0,0.14) 0 0.35px, transparent 0.6px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.12) 0 0.35px, transparent 0.6px), radial-gradient(circle at 84% 82%, rgba(0,0,0,0.10) 0 0.35px, transparent 0.6px)';
+
 export default function DiffViewer() {
+  const { toast } = useToast();
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [livePrompt, setLivePrompt] = useState(mockScenarios[2].prompt);
@@ -68,15 +81,15 @@ export default function DiffViewer() {
     computeDiff(mockScenarios[2].modelA, mockScenarios[2].modelB)
   );
 
-  const loadMockScenario = (index: number) => {
+  const loadMockScenario = useCallback((index: number) => {
     const scenario = mockScenarios[index];
     setLivePrompt(scenario.prompt);
     setModelAOutput(scenario.modelA);
     setModelBOutput(scenario.modelB);
     setDiffResult(computeDiff(scenario.modelA, scenario.modelB));
-  };
+  }, []);
 
-  const handleModeSwitch = (live: boolean) => {
+  const handleModeSwitch = useCallback((live: boolean) => {
     setIsLiveMode(live);
     setDiffResult(null);
 
@@ -87,11 +100,21 @@ export default function DiffViewer() {
     }
 
     loadMockScenario(2);
-  };
+  }, [loadMockScenario]);
 
-  const handleGenerateAndCompare = async () => {
+  const handleGenerateAndCompare = useCallback(async (promptOverride?: string) => {
     if (isLiveMode) {
-      if (!livePrompt.trim()) return;
+      const promptToCompare = (promptOverride ?? livePrompt).trim();
+      if (!promptToCompare) {
+        toast({
+          title: 'Prompt required',
+          description: 'Enter a prompt to compare.',
+          variant: 'warning',
+        });
+        return;
+      }
+
+      setLivePrompt(promptToCompare);
       setIsGenerating(true);
       setDiffResult(null);
 
@@ -99,17 +122,33 @@ export default function DiffViewer() {
         const res = await fetch('/api/compare', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: livePrompt }),
+          body: JSON.stringify({ prompt: promptToCompare }),
         });
 
         const data = await res.json();
+        if (!res.ok) {
+          throw new Error(typeof data.error === 'string' ? data.error : 'Compare request failed');
+        }
+
         if (data.modelA && data.modelB) {
           setModelAOutput(data.modelA);
           setModelBOutput(data.modelB);
           setDiffResult(computeDiff(data.modelA, data.modelB));
+          toast({
+            title: 'Comparison ready',
+            description: 'Model outputs updated.',
+            variant: 'success',
+          });
+        } else {
+          throw new Error('No comparison returned');
         }
       } catch (error) {
         console.error('Failed to fetch live comparison', error);
+        toast({
+          title: error instanceof Error && error.message.includes('timed out') ? 'Comparison timed out' : 'Comparison failed',
+          description: error instanceof Error && error.message.includes('timed out') ? 'Sarvam is busy. Try again shortly.' : 'Try again in a moment.',
+          variant: 'destructive',
+        });
       } finally {
         setIsGenerating(false);
       }
@@ -117,17 +156,17 @@ export default function DiffViewer() {
     }
 
     setDiffResult(computeDiff(modelAOutput, modelBOutput));
-  };
+  }, [isLiveMode, livePrompt, modelAOutput, modelBOutput, toast]);
 
-  const diffStats = getDiffStats(diffResult);
+  const diffStats = useMemo(() => getDiffStats(diffResult), [diffResult]);
 
   return (
     <div className="flex h-[calc(100dvh-64px)] w-full overflow-hidden bg-white font-['Geist'] text-[#09090b] dark:bg-[#09090b] dark:text-[#fafafa] lg:h-screen">
       <GlobalStyles />
       <main className="flex min-w-0 flex-1 flex-col bg-white dark:bg-[#0f0f12]">
-          <header className="flex shrink-0 flex-col items-start justify-center gap-3 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-7">
+          <header className="flex min-h-[64px] shrink-0 flex-col items-start justify-center gap-3 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
             <div className="flex min-w-0 flex-col justify-center">
-              <h1 className="text-[15px] font-semibold tracking-[-0.02em] text-[#09090b] dark:text-[#fafafa]">Model Output Diff View</h1>
+              <h1 className="font-['Geist'] text-[15px] font-semibold tracking-normal text-[#09090b] dark:text-[#fafafa]">Model Output Diff View</h1>
               <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
                 Compare two model versions on the same prompt with token-level changed words.
               </p>
@@ -135,8 +174,9 @@ export default function DiffViewer() {
             <ModeToggle isLiveMode={isLiveMode} onModeSwitch={handleModeSwitch} />
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 lg:px-7">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4 pt-4 sm:px-6 lg:px-8">
             <PromptCard
+              key={`${isLiveMode ? 'live' : 'sample'}-${livePrompt}`}
               isLiveMode={isLiveMode}
               isGenerating={isGenerating}
               livePrompt={livePrompt}
@@ -148,29 +188,31 @@ export default function DiffViewer() {
 
             <StatsCard stats={diffStats} />
 
-            <div className="grid gap-4 xl:min-h-0 xl:flex-1 xl:grid-cols-2">
-              <ModelCard
-                title="Baseline Model"
-                badge="Version A"
-                tone="blue"
-                modeLabel={isLiveMode ? 'temperature 0.1' : 'baseline output'}
-                rawValue={modelAOutput}
-                onRawChange={setModelAOutput}
-                diffResult={diffResult}
-                disabled={isLiveMode || isGenerating}
-                side="removed"
-              />
-              <ModelCard
-                title="Candidate Model"
-                badge="Version B"
-                tone="orange"
-                modeLabel={isLiveMode ? 'temperature 0.2' : 'candidate output'}
-                rawValue={modelBOutput}
-                onRawChange={setModelBOutput}
-                diffResult={diffResult}
-                disabled={isLiveMode || isGenerating}
-                side="added"
-              />
+            <div className="relative min-h-0 xl:flex-1">
+              <div className="grid h-full min-h-0 gap-4 xl:grid-cols-2">
+                <ModelCard
+                  title="Baseline Model"
+                  badge="Version A"
+                  tone="blue"
+                  modeLabel={isLiveMode ? 'temperature 0.1' : 'baseline output'}
+                  rawValue={modelAOutput}
+                  onRawChange={setModelAOutput}
+                  diffResult={diffResult}
+                  disabled={isLiveMode || isGenerating}
+                  side="removed"
+                />
+                <ModelCard
+                  title="Candidate Model"
+                  badge="Version B"
+                  tone="orange"
+                  modeLabel={isLiveMode ? 'temperature 0.2' : 'candidate output'}
+                  rawValue={modelBOutput}
+                  onRawChange={setModelBOutput}
+                  diffResult={diffResult}
+                  disabled={isLiveMode || isGenerating}
+                  side="added"
+                />
+              </div>
             </div>
 
             <div className="flex shrink-0 items-start gap-2 text-[11px] leading-5 text-[#71717a] sm:items-center">
@@ -255,15 +297,27 @@ function PromptCard({
   onPromptChange: (value: string) => void;
   onModeSwitch: (value: boolean) => void;
   onScenarioSelect: (index: number) => void;
-  onCompare: () => void;
+  onCompare: (prompt: string) => void;
 }) {
+  const [draftPrompt, setDraftPrompt] = useState(livePrompt);
+
   const activateLiveMode = () => {
     if (!isLiveMode && !isGenerating) onModeSwitch(true);
   };
 
   const handlePromptChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (!isLiveMode) onModeSwitch(true);
-    onPromptChange(event.target.value);
+    const nextPrompt = event.target.value;
+    if (!isLiveMode) {
+      onPromptChange(nextPrompt);
+      onModeSwitch(true);
+    }
+    setDraftPrompt(nextPrompt);
+  };
+
+  const handleCompare = () => {
+    if (!draftPrompt.trim() || isGenerating) return;
+    onPromptChange(draftPrompt);
+    onCompare(draftPrompt);
   };
 
   const handlePromptKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -275,7 +329,7 @@ function PromptCard({
       return;
     }
 
-    if (livePrompt.trim() && !isGenerating) onCompare();
+    handleCompare();
   };
 
   return (
@@ -296,12 +350,12 @@ function PromptCard({
             </label>
             <textarea
               id="diff-prompt"
-              value={livePrompt}
+              value={draftPrompt}
               onFocus={activateLiveMode}
               onChange={handlePromptChange}
               onKeyDown={handlePromptKeyDown}
               disabled={isGenerating}
-              className="mt-2 min-h-[54px] w-full resize-none bg-transparent text-[15px] leading-[1.65] tracking-[-0.01em] text-[#09090b] outline-none placeholder:text-[#a1a1aa] disabled:text-[#71717a] dark:text-[#fafafa] dark:placeholder:text-[#52525b] dark:disabled:text-[#71717a]"
+              className="mt-2 block min-h-[54px] w-full resize-none overflow-hidden bg-transparent text-[15px] leading-[1.65] tracking-[-0.01em] text-[#09090b] outline-none placeholder:text-[#a1a1aa] disabled:text-[#71717a] dark:text-[#fafafa] dark:placeholder:text-[#52525b] dark:disabled:text-[#71717a]"
               placeholder="Explain the benefits of using AI in education."
               rows={2}
             />
@@ -315,8 +369,8 @@ function PromptCard({
               {isLiveMode && (
                 <button
                   type="button"
-                  onClick={onCompare}
-                  disabled={isGenerating || !livePrompt.trim()}
+                  onClick={handleCompare}
+                  disabled={isGenerating || !draftPrompt.trim()}
                   className="inline-flex h-10 w-full items-center justify-center rounded-full bg-[#09090b] px-5 text-sm font-semibold tracking-[-0.01em] text-white shadow-sm transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#fafafa] dark:text-[#09090b] sm:w-auto"
                 >
                   {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Generate and compare'}
@@ -326,16 +380,19 @@ function PromptCard({
           </div>
 
           {!isLiveMode && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[14px] border border-black/5 bg-white/70 p-2.5 shadow-sm dark:border-white/10 dark:bg-[#0f0f12]">
-              <span className="px-1 text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">Try an example</span>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 rounded-[14px] border border-black/5 bg-white/70 p-2 shadow-sm dark:border-white/10 dark:bg-[#0f0f12] sm:gap-2 sm:p-2.5">
+              <span className="px-1 text-[11px] font-semibold tracking-[-0.01em] text-[#09090b] dark:text-white sm:text-[12px]">Try an example</span>
               {mockScenarios.map((scenario, index) => (
                 <button
                   key={scenario.label}
                   type="button"
                   onClick={() => onScenarioSelect(index)}
-                  className="rounded-lg border border-black/5 bg-white px-3 py-1 text-[11px] font-medium tracking-[-0.01em] text-[#71717a] shadow-sm transition hover:border-black/10 hover:bg-[#f4f4f5] hover:text-[#09090b] dark:border-white/10 dark:bg-[#18181b] dark:hover:border-white/20 dark:hover:bg-[#27272a] dark:hover:text-[#fafafa]"
+                  className="relative isolate overflow-hidden rounded-lg border border-white/35 px-2.5 py-1 text-[10px] font-semibold tracking-[-0.01em] text-white shadow-[0_8px_18px_rgba(15,23,42,0.12)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_24px_rgba(15,23,42,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#09090b]/20 dark:border-white/15 dark:shadow-[0_10px_22px_rgba(0,0,0,0.28)] dark:focus-visible:ring-white/25 sm:px-3 sm:py-1.5 sm:text-[11px]"
+                  style={{ background: exampleChipGradients[index % exampleChipGradients.length] }}
                 >
-                  {scenario.label}
+                  <span className="pointer-events-none absolute inset-0 opacity-35 mix-blend-overlay" style={{ backgroundImage: fineChipGrain, backgroundSize: '4px 4px' }} />
+                  <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.12))]" />
+                  <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(0,0,0,0.18)]">{scenario.label}</span>
                   <span className="sr-only"> example {index + 1}</span>
                 </button>
               ))}
@@ -349,37 +406,115 @@ function PromptCard({
 
 function StatsCard({ stats }: { stats: ReturnType<typeof getDiffStats> }) {
   const metrics = [
-    { label: 'Total Tokens', value: String(stats.total), sub: '', color: 'text-slate-950 dark:text-white' },
-    { label: 'Added', value: `+ ${stats.added}`, sub: `${stats.addedPct}%`, color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: 'Removed', value: `- ${stats.removed}`, sub: `${stats.removedPct}%`, color: 'text-red-600 dark:text-red-400' },
-    { label: 'Unchanged', value: String(stats.unchanged), sub: `${stats.unchangedPct}%`, color: 'text-slate-950 dark:text-white' },
-    { label: 'Similarity', value: `${stats.similarity}%`, sub: '', color: 'text-[#5161ff] dark:text-[#7b73ff]' },
+    { label: 'Total Tokens', value: String(stats.total), sub: 'tokens compared', tone: 'neutral', bar: stats.total > 0 ? 100 : 0 },
+    { label: 'Added', value: `+${stats.added}`, sub: `${stats.addedPct}% added`, tone: 'added', bar: stats.addedPct },
+    { label: 'Removed', value: `-${stats.removed}`, sub: `${stats.removedPct}% removed`, tone: 'removed', bar: stats.removedPct },
+    { label: 'Unchanged', value: String(stats.unchanged), sub: `${stats.unchangedPct}% unchanged`, tone: 'stable', bar: stats.unchangedPct },
   ];
+  const dialDegrees = Math.max(0, Math.min(100, stats.similarity)) * 3.6;
+  const dialMidpoint = dialDegrees > 0 ? Math.max(8, dialDegrees * 0.55) : 0;
 
   return (
-    <div className="grid shrink-0 gap-3 rounded-[12px] border border-black/5 bg-[#fafafa] p-3.5 shadow-sm dark:border-white/10 dark:bg-[#0f0f12] sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
-      {metrics.map((metric, index) => (
-        <div
-          key={metric.label}
-          className={`px-3 ${index > 0 ? 'border-black/5 dark:border-white/10 xl:border-l' : ''}`}
-        >
-          <div className="flex items-center gap-1.5 text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">
-            {metric.label}
-            {metric.label === 'Similarity' && <Info className="h-3 w-3" />}
-          </div>
-          <div className={`mt-1 text-xl font-semibold tracking-normal ${metric.color}`}>{metric.value}</div>
-          {metric.sub && (
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-[#71717a]">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  metric.label === 'Added' ? 'bg-emerald-500' : metric.label === 'Removed' ? 'bg-red-500' : 'bg-slate-400'
-                }`}
-              />
-              {metric.sub}
+    <section className="relative isolate shrink-0 overflow-hidden rounded-[16px] border border-black/5 bg-[#fafafa] p-2.5 shadow-sm dark:border-white/10 dark:bg-[#09090b] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_16px_36px_rgba(0,0,0,0.30)]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.16] mix-blend-overlay dark:opacity-20" style={{ backgroundImage: fineChipGrain, backgroundSize: '4px 4px' }} />
+
+      <div className="relative z-10 grid gap-2.5 lg:grid-cols-[92px_minmax(0,1fr)]">
+        <div className="grid place-items-center rounded-[13px] border border-black/5 bg-white/78 p-2 shadow-sm backdrop-blur dark:border-white/[0.08] dark:bg-[#0c0d10]/82 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_28px_rgba(0,0,0,0.34)]">
+          <div
+            className="relative grid h-[68px] w-[68px] shrink-0 place-items-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_10px_20px_rgba(15,23,42,0.10)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_10px_22px_rgba(0,0,0,0.30)]"
+            style={{
+              background: `conic-gradient(from -90deg, #789b42 0deg, #8f9df4 ${dialMidpoint}deg, #e4765b ${dialDegrees}deg, rgba(113,113,122,0.16) ${dialDegrees}deg 360deg)`,
+            }}
+            aria-label={`${stats.similarity}% similarity`}
+          >
+            <div className="absolute inset-[4px] rounded-full bg-white dark:bg-[#09090b]" />
+            <div className="absolute inset-[8px] rounded-full border border-black/5 bg-[#fafafa] dark:border-white/[0.08] dark:bg-[#111216]" />
+            <div className="relative text-center">
+              <div className="text-[12px] font-semibold leading-none tracking-normal text-[#09090b] dark:text-[#fafafa]">{stats.similarity}%</div>
+              <div className="mt-1 text-[6.5px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">Match</div>
             </div>
-          )}
+          </div>
         </div>
-      ))}
+
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {metrics.map((metric) => (
+            <SummaryMetric key={metric.label} metric={metric} />
+          ))}
+          <AlgorithmMetric />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SummaryMetric({
+  metric,
+}: {
+  metric: {
+    label: string;
+    value: string;
+    sub: string;
+    tone: string;
+    bar: number;
+  };
+}) {
+  const toneStyles: Record<string, { value: string; bar: string }> = {
+    neutral: {
+      value: 'text-[#09090b] dark:text-[#fafafa]',
+      bar: 'linear-gradient(90deg,#789b42,#8f9df4,#e4765b)',
+    },
+    added: {
+      value: 'text-emerald-600 dark:text-emerald-400',
+      bar: 'linear-gradient(90deg,#15803d,#84a948,#d8d190)',
+    },
+    removed: {
+      value: 'text-red-600 dark:text-red-400',
+      bar: 'linear-gradient(90deg,#b91c1c,#e4765b,#a8577a)',
+    },
+    stable: {
+      value: 'text-[#5161ff] dark:text-[#aab7ff]',
+      bar: 'linear-gradient(90deg,#7889ec,#aab7ff,#d8e0ff)',
+    },
+  };
+  const style = toneStyles[metric.tone] ?? toneStyles.neutral;
+  const barWidth = `${Math.max(0, Math.min(100, metric.bar))}%`;
+
+  return (
+    <div className="relative isolate min-w-0 overflow-hidden rounded-[13px] border border-black/5 bg-white/82 p-2.5 shadow-sm backdrop-blur dark:border-white/[0.08] dark:bg-[#0c0d10]/82 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_28px_rgba(0,0,0,0.30)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/70 dark:bg-white/10" />
+      <div className="relative z-10">
+        <div className="flex items-center gap-2">
+          <div className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">{metric.label}</div>
+        </div>
+        <div className={`mt-1.5 text-[21px] font-semibold leading-none tracking-[-0.02em] ${style.value}`}>{metric.value}</div>
+        <div className="mt-1 whitespace-nowrap text-[10px] font-medium leading-4 tracking-[-0.01em] text-[#71717a]">{metric.sub}</div>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+          <div className="h-full rounded-full" style={{ width: barWidth, background: style.bar }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AlgorithmMetric() {
+  return (
+    <div className="relative isolate min-w-0 overflow-hidden rounded-[13px] border border-black/5 bg-white/82 p-2.5 shadow-sm backdrop-blur dark:border-white/[0.08] dark:bg-[#0c0d10]/82 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_12px_28px_rgba(0,0,0,0.30)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/70 dark:bg-white/10" />
+      <div className="relative z-10 flex h-full min-h-[72px] flex-col">
+        <div className="flex items-center gap-1.5">
+          <Info className="h-3 w-3 text-[#71717a]" />
+          <div className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-[#71717a]">Diff Algorithm</div>
+        </div>
+        <div className="mt-1.5 text-[14px] font-semibold leading-none tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Token-level LCS</div>
+        <p className="mt-1.5 line-clamp-2 text-[10px] font-medium leading-4 tracking-[-0.01em] text-[#71717a]">
+          Custom dynamic programming diff. Preserves spacing and highlights changed tokens.
+        </p>
+        <div className="mt-auto pt-2">
+          <div className="h-1 overflow-hidden rounded-full bg-black/5 dark:bg-white/10">
+            <div className="h-full w-full rounded-full bg-[linear-gradient(90deg,#789b42,#8f9df4,#e4765b)]" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -405,12 +540,40 @@ function ModelCard({
   disabled: boolean;
   side: 'removed' | 'added';
 }) {
+  const { toast } = useToast();
   const isBlue = tone === 'blue';
   const [viewMode, setViewMode] = useState<'diff' | 'text'>('diff');
   const showDiff = diffResult && viewMode === 'diff';
 
+  const handleCopy = async () => {
+    if (!rawValue.trim()) {
+      toast({
+        title: 'Nothing to copy',
+        description: 'Run a comparison first.',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(rawValue);
+      toast({
+        title: 'Copied',
+        description: `${title} output copied.`,
+        variant: 'success',
+      });
+    } catch {
+      toast({
+        title: 'Copy failed',
+        description: 'Select the text and copy manually.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
-    <div className="flex min-h-[320px] flex-col overflow-hidden rounded-[12px] border border-black/5 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-[#000000] xl:min-h-0">
+    <div className="flex h-[360px] min-h-0 flex-col overflow-hidden rounded-[12px] border border-black/5 bg-[#fafafa] shadow-sm dark:border-white/10 dark:bg-[#000000] md:h-[400px] xl:h-full">
       <div className="flex shrink-0 flex-col gap-3 border-b border-black/5 bg-white px-4 py-3 dark:border-white/10 dark:bg-[#0f0f12] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
           <GradientAvatar tone={tone} />
@@ -451,7 +614,7 @@ function ModelCard({
             type="button"
             className="grid h-8 w-8 place-items-center rounded-[8px] text-[#71717a] transition hover:bg-[#f4f4f5] hover:text-[#09090b] dark:hover:bg-[#27272a] dark:hover:text-[#fafafa]"
             aria-label={`Copy ${title} output`}
-            onClick={() => navigator.clipboard?.writeText(rawValue)}
+            onClick={handleCopy}
           >
             <Copy className="h-4 w-4" />
           </button>

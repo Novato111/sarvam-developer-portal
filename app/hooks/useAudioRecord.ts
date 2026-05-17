@@ -1,10 +1,12 @@
 // src/hooks/useAudioRecord.ts
 import { useState, useRef, useCallback } from 'react';
+import { useToast } from '@/componets/ToastProvider';
 
 const MIN_RECORDING_MS = 800;
 const MIN_AUDIO_BYTES = 900;
 
 export function useAudioRecord(onTranscriptionComplete: (text: string) => void) {
+  const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -50,7 +52,13 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
           audioChunksRef.current.length === 0 ||
           audioBlob.size < MIN_AUDIO_BYTES
         ) {
-          setAudioError('Recording was too short. Hold the mic and speak for a moment.');
+          const message = 'Recording was too short. Hold the mic and speak for a moment.';
+          setAudioError(message);
+          toast({
+            title: 'Recording too short',
+            description: 'Hold the mic and speak for a moment.',
+            variant: 'warning',
+          });
           return;
         }
 
@@ -75,13 +83,28 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
           
           if (transcript) {
              onTranscriptionComplete(transcript);
+             toast({
+               title: 'Audio transcribed',
+               description: 'Transcript added to the prompt.',
+               variant: 'success',
+             });
           } else {
              setAudioError('No speech detected. Try a slightly longer recording.');
+             toast({
+               title: 'No speech detected',
+               description: 'Try a slightly longer recording.',
+               variant: 'warning',
+             });
           }
 
         } catch (error) {
           console.error("Audio Transcription failed:", error); 
           setAudioError("Couldn't transcribe audio. Please try again.");
+          toast({
+            title: 'Transcription failed',
+            description: 'Please try recording again.',
+            variant: 'destructive',
+          });
         } finally {
           setIsTranscribing(false);
         }
@@ -93,8 +116,13 @@ export function useAudioRecord(onTranscriptionComplete: (text: string) => void) 
     } catch (err) {
       console.error("Mic access denied or failed", err);
       setAudioError("Microphone access denied. Please check your browser settings.");
+      toast({
+        title: 'Microphone blocked',
+        description: 'Check your browser permissions.',
+        variant: 'destructive',
+      });
     }
-  }, [onTranscriptionComplete]);
+  }, [onTranscriptionComplete, toast]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {

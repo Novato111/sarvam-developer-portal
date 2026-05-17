@@ -6,11 +6,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { 
-  ChevronLeft, 
   ChevronDown, 
   Terminal, 
   GitCompare, 
-  Headphones, 
+  BookOpen, 
   Moon, 
   Sun 
 } from 'lucide-react';
@@ -24,7 +23,7 @@ const sarvamAvatarGrain =
 const subscribeHydration = () => () => {};
 function useIsHydrated() { return useSyncExternalStore(subscribeHydration, () => true, () => false); }
 
-function SarvamSquareAvatar({ className = 'h-8 w-8 rounded-lg' }: { className?: string }) {
+function SarvamSquareAvatar({ className = 'h-7 w-7 rounded-lg' }: { className?: string }) {
   return (
     <div
       className={`relative shrink-0 overflow-hidden border border-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.48),0_8px_18px_rgba(15,23,42,0.10)] dark:border-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_10px_22px_rgba(0,0,0,0.24)] ${className}`}
@@ -46,46 +45,44 @@ export default function Sidebar() {
     { name: 'Inference Playground', href: '/playground', icon: Terminal },
     { name: 'Model Output Diff', href: '/diff-viewer', icon: GitCompare },
   ];
+  const isDocumentationActive = pathname.startsWith('/documentation');
 
   return (
     <>
       {/* ─── DESKTOP SIDEBAR ─── */}
-      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#09090b] lg:flex select-none">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[256px] flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-[#09090b] lg:flex select-none">
         
-        <div className="flex flex-col px-4 pt-6 pb-4">
-          {/* Header & Collapse */}
-          <div className="flex items-center justify-between mb-3 px-1">
-            <Link href="/playground" className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <div className="flex flex-col px-3.5 pb-3 pt-5">
+          {/* Header */}
+          <div className="mb-2.5 flex items-center px-1">
+            <Link href="/playground" className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               sarvam
             </Link>
-            <button className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-[#09090b] dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
           </div>
-          <div className="mx-1 mb-4 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800" />
+          <div className="mx-1 mb-3.5 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent dark:via-zinc-800" />
 
           {/* Workspace Card */}
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50/50 p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-            <button className="flex w-full items-center justify-between rounded-lg p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
-              <div className="flex items-center gap-3">
+          <div className="rounded-[11px] border border-zinc-200 bg-zinc-50/50 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+            <button className="flex w-full items-center justify-between rounded-[9px] p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
+              <div className="flex items-center gap-2.5">
                 <SarvamSquareAvatar />
                 <div className="flex flex-col items-start">
-                  <span className="text-[13px] font-semibold text-zinc-900 leading-tight dark:text-zinc-100">
+                  <span className="text-[12px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
                     Sarvam AI
                   </span>
-                  <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                  <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
                     Developer Experience
                   </span>
                 </div>
               </div>
-              <ChevronDown className="h-4 w-4 text-zinc-400 mr-1" />
+              <ChevronDown className="mr-1 h-3.5 w-3.5 text-zinc-400" />
             </button>
           </div>
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 space-y-1 px-4 py-2">
-          <div className="px-2 mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        <nav className="flex-1 space-y-1 px-3.5 py-1.5">
+          <div className="mb-1.5 px-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
             Developer Workflow
           </div>
           {navItems.map((item) => {
@@ -94,13 +91,13 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all ${
+                className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium transition-all ${
                   isActive
                     ? 'bg-zinc-100 text-zinc-900 shadow-sm dark:bg-zinc-800/80 dark:text-zinc-50'
                     : 'text-zinc-600 hover:bg-zinc-100/50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100'
                 }`}
               >
-                <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-zinc-900 dark:text-zinc-50' : 'text-zinc-500 dark:text-zinc-400'}`} />
+                <item.icon className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-zinc-900 dark:text-zinc-50' : 'text-zinc-500 dark:text-zinc-400'}`} />
                 {item.name}
               </Link>
             );
@@ -108,19 +105,26 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom Section */}
-        <div className="flex flex-col px-4 pb-6">
+        <div className="flex flex-col px-3.5 pb-5">
           
      
-          {/* Support & Dark Mode Card */}
-          <div className="mb-4 rounded-xl border border-zinc-200 bg-zinc-50/50 p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-            <button className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-[13px] font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100">
-              <Headphones className="h-4 w-4 shrink-0" />
-              Support
-            </button>
+          {/* Documentation & Dark Mode Card */}
+          <div className="mb-3 rounded-[11px] border border-zinc-200 bg-zinc-50/50 p-1 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+            <Link
+              href="/documentation"
+              className={`flex w-full items-center gap-2.5 rounded-[9px] px-2 py-1.5 text-[12px] font-medium transition-colors ${
+                isDocumentationActive
+                  ? 'bg-zinc-100 text-zinc-900 shadow-sm dark:bg-zinc-800/80 dark:text-zinc-50'
+                  : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800/50 dark:hover:text-zinc-100'
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5 shrink-0" />
+              Documentation
+            </Link>
             
-            <div className="flex w-full items-center justify-between rounded-lg px-2 py-2 text-[13px] font-medium text-zinc-600 dark:text-zinc-400">
-              <div className="flex items-center gap-3">
-                <Moon className="h-4 w-4 shrink-0" />
+            <div className="flex w-full items-center justify-between rounded-[9px] px-2 py-1.5 text-[12px] font-medium text-zinc-600 dark:text-zinc-400">
+              <div className="flex items-center gap-2.5">
+                <Moon className="h-3.5 w-3.5 shrink-0" />
                 Dark Mode
               </div>
               
@@ -137,20 +141,20 @@ export default function Sidebar() {
           </div>
 
           {/* User Profile Card */}
-          <div className="rounded-xl border border-zinc-200 bg-white p-1.5 shadow-sm dark:border-zinc-800 dark:bg-[#09090b]">
-            <button className="flex w-full items-center justify-between rounded-lg p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
-              <div className="flex items-center gap-3 min-w-0">
-                <SarvamSquareAvatar className="h-8 w-8 rounded-full" />
+          <div className="rounded-[11px] border border-zinc-200 bg-white p-1 shadow-sm dark:border-zinc-800 dark:bg-[#09090b]">
+            <button className="flex w-full items-center justify-between rounded-[9px] p-1.5 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <SarvamSquareAvatar className="h-7 w-7 rounded-full" />
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="text-[13px] font-semibold text-zinc-900 truncate w-full text-left leading-tight dark:text-zinc-100">
+                  <span className="w-full truncate text-left text-[12px] font-semibold leading-tight text-zinc-900 dark:text-zinc-100">
                     Demo Engineer
                   </span>
-                  <span className="text-[11px] font-medium text-zinc-500 truncate w-full text-left dark:text-zinc-400">
+                  <span className="w-full truncate text-left text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
                     engineer@companyx.dev
                   </span>
                 </div>
               </div>
-              <ChevronDown className="h-4 w-4 text-zinc-400 mr-1 shrink-0" />
+              <ChevronDown className="mr-1 h-3.5 w-3.5 shrink-0 text-zinc-400" />
             </button>
           </div>
 

@@ -1,6 +1,7 @@
 
 // src/hooks/useStream.ts
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { useToast } from '@/componets/ToastProvider';
 
 export interface StreamMessage {
   role: 'user' | 'assistant' | 'system';
@@ -12,13 +13,14 @@ interface StreamCallbacks {
 }
 
 export function useStream() {
+  const { toast } = useToast();
   const [output, setOutput] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState({ tokenCount: 0, startTime: 0 });
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const startStream = async (input: string | StreamMessage[], callbacks?: StreamCallbacks) => {
+  const startStream = useCallback(async (input: string | StreamMessage[], callbacks?: StreamCallbacks) => {
     setIsStreaming(true);
     setError(null);
     setOutput(''); // Clear previous run
@@ -92,9 +94,19 @@ export function useStream() {
     } catch (err: unknown) {
       // NEW: Catch the specific AbortError so we don't treat it as a crash
       if (err instanceof Error && err.name === 'AbortError') {
-        setError('Generation stopped by user.');
+        setError(null);
+        toast({
+          title: 'Stream stopped',
+          description: 'Partial response preserved.',
+          variant: 'default',
+        });
       } else {
         setError('Connection interrupted mid-stream. Partial output preserved.');
+        toast({
+          title: 'Stream interrupted',
+          description: 'Partial response preserved.',
+          variant: 'destructive',
+        });
       }
     } finally {
       if (animationFrameId !== null) {
@@ -105,14 +117,14 @@ export function useStream() {
       setIsStreaming(false);
       abortControllerRef.current = null; // Cleanup
     }
-  };
+  }, [toast]);
 
   // NEW: Function to manually trigger the abort
-  const stopStream = () => {
+  const stopStream = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
-  };
+  }, []);
 
   return { output, setOutput, isStreaming, error, metrics, startStream, stopStream };
 }

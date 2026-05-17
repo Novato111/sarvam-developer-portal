@@ -1,6 +1,7 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { memo, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import {
   Mic,
@@ -262,8 +263,9 @@ function AssistantMarkdown({ content, streaming = false }: { content: string; st
 }
 
 // ─── GLOBAL STYLES & ANIMATIONS ────────────────────────────────────────────────
-const GlobalStyles = () => (
-  <style dangerouslySetInnerHTML={{__html: `
+const GlobalStyles = memo(function GlobalStyles() {
+  return (
+    <style dangerouslySetInnerHTML={{__html: `
     @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
 
     @keyframes orbSpin    { to { transform:rotate(360deg) } }
@@ -285,7 +287,8 @@ const GlobalStyles = () => (
     @keyframes personaGlimmer { 0%,100%{opacity:0.22; transform:translate3d(-5%, -4%, 0) scale(0.96)} 50%{opacity:0.38; transform:translate3d(5%, 4%, 0) scale(1.04)} }
     @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
   `}} />
-);
+  );
+});
 
 // ─── IDLE HERO ────────────────────────────────────────────────────────────────
 const CHIPS = [
@@ -338,7 +341,7 @@ const personaAuraGradient =
   'radial-gradient(circle at 24% 18%, rgba(137,169,70,0.40), transparent 44%), radial-gradient(circle at 78% 18%, rgba(128,145,236,0.34), transparent 46%), radial-gradient(circle at 68% 80%, rgba(229,118,82,0.38), transparent 48%)';
 
 const personaGrain =
-  'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.28) 0 0.7px, transparent 1px), radial-gradient(circle at 72% 34%, rgba(24,24,24,0.18) 0 0.55px, transparent 1px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.19) 0 0.65px, transparent 1px), radial-gradient(circle at 84% 82%, rgba(24,24,24,0.14) 0 0.55px, transparent 1px)';
+  'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.16) 0 0.35px, transparent 0.6px), radial-gradient(circle at 72% 34%, rgba(24,24,24,0.14) 0 0.35px, transparent 0.6px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.12) 0 0.35px, transparent 0.6px), radial-gradient(circle at 84% 82%, rgba(24,24,24,0.10) 0 0.35px, transparent 0.6px)';
 
 function ModelAvatar({ mode, size = 'sm' }: { mode: 'text' | 'audio'; size?: 'sm' | 'md' }) {
   return (
@@ -449,6 +452,7 @@ type PersonaAvatarState = 'idle' | 'thinking' | 'streaming' | 'done';
 
 function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarState; size?: number }) {
   const active = state === 'thinking' || state === 'streaming';
+  const isLarge = size >= 48;
   const breathAnimation = active
     ? 'personaThink 1.55s cubic-bezier(0.37,0,0.23,1) infinite'
     : 'personaBreathe 4.9s cubic-bezier(0.37,0,0.23,1) infinite';
@@ -462,31 +466,35 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
       aria-hidden="true"
     >
       <span
-        className="pointer-events-none absolute -inset-2 rounded-full blur-[7px]"
+        className={`pointer-events-none absolute rounded-full ${isLarge ? '-inset-1 opacity-55 blur-[3px]' : '-inset-2 blur-[7px]'}`}
         style={{
           background: personaAuraGradient,
           animation: auraAnimation,
         }}
       />
       <span
-        className="pointer-events-none absolute -inset-[2px] rounded-full border border-white/55 dark:border-white/15"
+        className={`pointer-events-none absolute rounded-full border border-white/55 dark:border-white/15 ${isLarge ? '-inset-px' : '-inset-[2px]'}`}
         style={{ animation: 'personaRing 4.9s ease-in-out infinite' }}
       />
       <span
-        className="relative block h-full w-full overflow-hidden rounded-full border border-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.54),inset_0_-12px_18px_rgba(49,41,27,0.10),0_9px_18px_rgba(15,23,42,0.10)] dark:border-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-12px_18px_rgba(0,0,0,0.24),0_10px_22px_rgba(0,0,0,0.28)]"
+        className={`relative block h-full w-full overflow-hidden rounded-full border border-white/70 dark:border-white/10 ${
+          isLarge
+            ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.62),inset_0_-10px_16px_rgba(49,41,27,0.08),0_8px_18px_rgba(15,23,42,0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.20),inset_0_-10px_16px_rgba(0,0,0,0.18),0_10px_20px_rgba(0,0,0,0.26)]'
+            : 'shadow-[inset_0_1px_0_rgba(255,255,255,0.54),inset_0_-12px_18px_rgba(49,41,27,0.10),0_9px_18px_rgba(15,23,42,0.10)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-12px_18px_rgba(0,0,0,0.24),0_10px_22px_rgba(0,0,0,0.28)]'
+        }`}
         style={{
           background: personaGradient,
-          backgroundSize: '190% 190%',
+          backgroundSize: isLarge ? '150% 150%' : '190% 190%',
           animation: flowAnimation,
         }}
       >
         <span
-          className="pointer-events-none absolute inset-0 opacity-35 mix-blend-overlay"
+          className={`pointer-events-none absolute inset-0 mix-blend-overlay ${isLarge ? 'opacity-25' : 'opacity-35'}`}
           style={{ backgroundImage: personaGrain, backgroundSize: '6px 6px', animation: 'personaGrainShift 7s steps(2,end) infinite' }}
         />
-        <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_28%_19%,rgba(255,255,255,0.34),transparent_31%)]" />
+        <span className={`pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.10),rgba(0,0,0,0.08))] ${isLarge ? 'opacity-70' : 'opacity-90'}`} />
         <span
-          className="pointer-events-none absolute inset-[18%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.32),transparent_62%)] mix-blend-soft-light"
+          className={`pointer-events-none absolute inset-[18%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.18),transparent_62%)] mix-blend-soft-light ${isLarge ? 'opacity-35' : 'opacity-55'}`}
           style={{ animation: 'personaGlimmer 6.2s ease-in-out infinite' }}
         />
       </span>
@@ -494,31 +502,34 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
   );
 }
 
-function IdleHero({ onChip }: { onChip: (text: string) => void }) {
+const IdleHero = memo(function IdleHero({ onChip }: { onChip: (text: string) => void }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden gap-6 py-6 sm:gap-7 lg:-mt-12">
       <div className="text-center relative animate-[fadeUp_0.4s_ease]">
         <h1 className="font-['Geist'] text-[23px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.03em] mb-2 leading-[1.2] sm:text-[26px]">How can I help you today?</h1>
       </div>
+      <div className="relative animate-[fadeUp_0.45s_ease]">
+        <PersonaAvatar state="idle" size={58} />
+      </div>
       <div className="relative flex w-full max-w-[640px] flex-col items-center gap-3">
         <div className="text-[12px] font-medium tracking-[-0.01em] text-[#71717a]">Try with an example</div>
-        <div className="grid w-full grid-cols-1 gap-2.5 px-0 sm:grid-cols-2 sm:px-4">
+        <div className="grid w-full grid-cols-2 gap-1.5 px-0 sm:gap-2.5 sm:px-4">
           {CHIPS.map((c, i) => (
             <button
               key={c.label}
               onClick={() => onChip(c.prompt)}
-              className="group rounded-[16px] border border-black/5 bg-[#fafafa] px-4 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-[#18181b] dark:hover:border-white/20 dark:hover:bg-[#202024]"
+              className="group min-h-[52px] rounded-[12px] border border-black/5 bg-[#fafafa] px-2.5 py-2 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-black/10 hover:bg-white hover:shadow-md dark:border-white/10 dark:bg-[#18181b] dark:hover:border-white/20 dark:hover:bg-[#202024] sm:min-h-0 sm:rounded-[16px] sm:px-4 sm:py-3"
               style={{ animation: `fadeUp ${0.3 + i * 0.06}s ease` }}
             >
-              <span className="block text-[13px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">{c.label}</span>
-              <span className="mt-1 block text-[11px] font-medium tracking-[-0.01em] text-[#71717a]">{c.hint}</span>
+              <span className="block truncate text-[11px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa] sm:text-[13px]">{c.label}</span>
+              <span className="mt-0.5 block truncate text-[9px] font-medium tracking-[-0.01em] text-[#71717a] sm:mt-1 sm:text-[11px]">{c.hint}</span>
             </button>
           ))}
         </div>
       </div>
     </div>
   );
-}
+});
 
 // ─── THINKING PERSONA ─────────────────────────────────────────────────────────
 function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'streaming'|'done', streamedText: string }) {
@@ -535,11 +546,19 @@ function ThinkingPersona({ state, streamedText }: { state: 'idle'|'thinking'|'st
       {/* Bubble */}
       <div className={`max-w-[86%] break-words bg-[#fafafa] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[3px_12px_12px_12px] text-sm leading-[1.75] text-[#09090b] dark:text-[#fafafa] font-['Geist'] animate-[fadeIn_0.18s_ease] tracking-[-0.01em] shadow-sm sm:max-w-[78%] ${showDots ? 'px-4 py-[11px] min-w-[68px]' : 'px-4 py-2.5'}`}>
         {showDots && (
-          <div className="flex gap-[5px] items-center h-[18px]">
-            {[0, 140, 280].map(d => <div key={d} className="w-[5px] h-[5px] rounded-full bg-[#71717a] opacity-60" style={{ animation: "dotBounce 1.2s ease-in-out infinite", animationDelay: `${d}ms` }} />)}
-          </div>
+          <>
+            <div className="flex gap-[5px] items-center h-[18px]" aria-hidden="true">
+              {[0, 140, 280].map(d => <div key={d} className="w-[5px] h-[5px] rounded-full bg-[#71717a] opacity-60" style={{ animation: "dotBounce 1.2s ease-in-out infinite", animationDelay: `${d}ms` }} />)}
+            </div>
+            <span className="sr-only">Sarvam is thinking</span>
+          </>
         )}
-        {showText && <AssistantMarkdown content={streamedText} streaming={showCursor} />}
+        {showText && (
+          <>
+            <AssistantMarkdown content={streamedText} streaming={showCursor} />
+            {showCursor && <span className="sr-only">Streaming response</span>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -552,8 +571,6 @@ type RightSidebarProps = {
   isThinking: boolean;
   model: string;
   mode: 'text' | 'audio';
-  error?: string | null;
-  onClearError: () => void;
 };
 
 type MetricRowProps = {
@@ -671,7 +688,7 @@ function AccordionSection({ title, children, defaultOpen = false }: { title: str
 }
 
 // ─── RIGHT SIDEBAR (METRICS) ──────────────────────────────────────────────────
-function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, onClearError }: RightSidebarProps) {
+function RightSidebar({ metrics, isStreaming, isThinking, model, mode }: RightSidebarProps) {
   const isIdle = !isStreaming && !isThinking;
   const hasMetrics = metrics.tokens > 0 || metrics.elapsed > 0 || metrics.tps > 0;
   const statusColor = isThinking ? "#f97316" : isStreaming ? "#22c55e" : "transparent";
@@ -697,9 +714,15 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, on
 
       <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
         {isIdle && !hasMetrics && (
-          <div className="mb-4 rounded-[12px] border border-black/5 bg-white px-3 py-3 shadow-sm dark:border-white/10 dark:bg-[#18181b]">
-            <div className="text-[12px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Start with a prompt</div>
-            <p className="mt-1 text-[11px] font-medium leading-5 tracking-[-0.01em] text-[#71717a]">
+          <div className="relative isolate mb-4 overflow-hidden rounded-[12px] border border-black/5 bg-white px-3 py-3 shadow-sm dark:border-white/10 dark:bg-[#18181b]">
+            <span
+              className="pointer-events-none absolute inset-0 opacity-25 mix-blend-overlay dark:opacity-30"
+              style={{ backgroundImage: personaGrain, backgroundSize: '6px 6px' }}
+              aria-hidden="true"
+            />
+            <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_8%,rgba(136,169,70,0.13),transparent_34%),radial-gradient(circle_at_85%_90%,rgba(229,118,82,0.12),transparent_38%)] dark:bg-[radial-gradient(circle_at_20%_8%,rgba(136,169,70,0.18),transparent_34%),radial-gradient(circle_at_85%_90%,rgba(229,118,82,0.18),transparent_38%)]" aria-hidden="true" />
+            <div className="relative z-10 text-[12px] font-medium tracking-[-0.01em] text-[#09090b] dark:text-[#fafafa]">Start with a prompt</div>
+            <p className="relative z-10 mt-1 text-[11px] font-medium leading-5 tracking-[-0.01em] text-[#71717a]">
               Send a text prompt or record audio to see the live token counter and speed update in real time.
             </p>
           </div>
@@ -747,16 +770,6 @@ function RightSidebar({ metrics, isStreaming, isThinking, model, mode, error, on
           <MetricRow label="Method"   value="POST"          mono />
         </AccordionSection>
 
-        {/* Error State */}
-        {error && (
-          <div className="mt-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-[10px] p-[10px_12px] animate-[slideIn_0.2s_ease]">
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="font-medium text-[10px] text-red-500 tracking-wide">Stream Error</span>
-              <button onClick={onClearError} className="text-red-500 hover:text-red-600 cursor-pointer text-[15px] leading-none">×</button>
-            </div>
-            <div className="font-['Geist'] text-[11px] text-red-600 dark:text-red-400 leading-[1.6] opacity-90">{error}</div>
-          </div>
-        )}
       </div>
 
       <style dangerouslySetInnerHTML={{__html: `
@@ -779,7 +792,7 @@ export default function Playground() {
   const { theme, setTheme, systemTheme } = useTheme();
   const mounted = useIsHydrated();
 
-  const { setOutput, isStreaming, error, metrics, startStream } = useStream();
+  const { setOutput, isStreaming, metrics, startStream, stopStream } = useStream();
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -795,14 +808,35 @@ export default function Playground() {
     return () => window.clearInterval(interval);
   }, [isStreaming, metrics.startTime]);
 
-  const handleSubmit = (overrideText?: string) => {
-    const textToSend = overrideText || promptText;
+  const resizePromptInput = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    const nextHeight = Math.min(Math.max(textarea.scrollHeight, 32), 128);
+    const nextHeightValue = `${nextHeight}px`;
+
+    if (textarea.style.height !== nextHeightValue) {
+      textarea.style.height = nextHeightValue;
+    }
+
+    textarea.style.overflowY = textarea.scrollHeight > 128 ? 'auto' : 'hidden';
+  }, []);
+
+  useLayoutEffect(() => {
+    if (inputMode === 'text') resizePromptInput();
+  }, [inputMode, promptText, resizePromptInput]);
+
+  const sendPrompt = useCallback((textToSend: string) => {
     if (!textToSend.trim() || isStreaming) return;
     const userMessage: ChatMessage = { id: createMessageId(), role: 'user', content: textToSend.trim() };
     const assistantMessage: ChatMessage = { id: createMessageId(), role: 'assistant', content: '' };
     setMessages(prev => [...prev, userMessage, assistantMessage]);
     setPromptText(''); setElapsedMs(0); setOutput('');
-    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '32px';
+      textareaRef.current.style.overflowY = 'hidden';
+    }
     
     const apiMessages = [...messages, userMessage].map(({ role, content }) => ({ role, content }));
     void startStream(apiMessages, {
@@ -810,12 +844,23 @@ export default function Playground() {
         setMessages(current => current.map(m => m.id === assistantMessage.id ? { ...m, content: m.content + token } : m));
       },
     });
-  };
+  }, [isStreaming, messages, setOutput, startStream]);
+
+  const handleSubmit = useCallback((overrideText?: string) => {
+    sendPrompt(overrideText ?? promptText);
+  }, [promptText, sendPrompt]);
+
+  const handleComposerAction = useCallback(() => {
+    if (isStreaming) {
+      stopStream();
+      return;
+    }
+
+    handleSubmit();
+  }, [handleSubmit, isStreaming, stopStream]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptText(e.target.value);
-    e.target.style.height = "auto"; 
-    e.target.style.height = Math.min(e.target.scrollHeight, 128) + "px";
   };
 
   const { startRecording, stopRecording, isRecording, isTranscribing, audioError } = useAudioRecord((transcript) => {
@@ -848,7 +893,7 @@ export default function Playground() {
   const speed = metrics.tokenCount > 0 && secondsElapsed > 0 ? `${(metrics.tokenCount / secondsElapsed).toFixed(1)}` : '—';
   const latency = metrics.startTime > 0 && elapsedMs > 0 ? `${secondsElapsed.toFixed(2)}` : '—';
   const currentTheme = mounted && theme === 'system' ? systemTheme : theme;
-  const canSend = promptText.trim() && !isStreaming && !isThinking && !isRecording && !isTranscribing;
+  const canSend = Boolean(promptText.trim()) && !isStreaming && !isThinking && !isRecording && !isTranscribing;
   const sidebarMetrics = {
     tokens: metrics.tokenCount,
     tps: speed !== '—' ? Number(speed) : 0,
@@ -865,17 +910,18 @@ export default function Playground() {
         {/* Header */}
         <header className="flex min-h-[64px] shrink-0 items-center justify-between gap-4 border-b border-black/5 bg-[#fafafa] px-4 py-3 dark:border-white/10 dark:bg-[#09090b] sm:min-h-[68px] sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-col justify-center gap-0.5">
-            <h1 className="font-['Geist'] text-[15px] font-semibold text-[#09090b] dark:text-[#fafafa] tracking-[-0.02em]">Inference Playground</h1>
+            <h1 className="font-['Geist'] text-[15px] font-semibold tracking-normal text-[#09090b] dark:text-[#fafafa]">Inference Playground</h1>
             <p className="mt-0.5 hidden truncate font-medium text-[10px] text-[#71717a] sm:block">
               Test on-device inference with text input, audio input, and live token streaming.
             </p>
           </div>
           <div className="hidden shrink-0 items-center gap-2 md:flex">
-            {["Docs", "Feedback"].map(b => (
-              <button key={b} className="px-3 py-[5px] rounded-[7px] border border-black/5 dark:border-white/10 bg-transparent text-[#71717a] text-xs cursor-pointer font-['Geist'] tracking-[-0.01em] transition-all hover:border-black/10 dark:hover:border-white/20 hover:text-[#09090b] dark:hover:text-[#fafafa]">
-                {b}
-              </button>
-            ))}
+            <Link
+              href="/documentation"
+              className="rounded-[7px] border border-black/5 bg-transparent px-3 py-[5px] font-['Geist'] text-xs tracking-normal text-[#71717a] transition-all hover:border-black/10 hover:text-[#09090b] dark:border-white/10 dark:hover:border-white/20 dark:hover:text-[#fafafa]"
+            >
+              Docs
+            </Link>
             {mounted && (
               <button 
                 onClick={() => setTheme(currentTheme === 'dark' ? 'light' : 'dark')}
@@ -890,9 +936,14 @@ export default function Playground() {
         <CompactMetricsBar metrics={sidebarMetrics} isStreaming={isStreaming} isThinking={isThinking} />
 
         {/* Chat Area */}
-        <div className="relative flex flex-1 flex-col overflow-y-auto px-4 py-4 sm:p-5">
+        <div
+          className="relative flex flex-1 flex-col overflow-y-auto px-4 py-4 sm:p-5"
+          aria-live="polite"
+          aria-label="Chat conversation"
+          aria-atomic="false"
+        >
           {messages.length === 0 && !isStreaming ? (
-            <IdleHero onChip={handleSubmit} />
+            <IdleHero onChip={sendPrompt} />
           ) : (
             <div className="flex flex-col gap-4 max-w-4xl mx-auto w-full pb-6">
               {messages.map((m, i) => {
@@ -941,7 +992,7 @@ export default function Playground() {
                   onChange={handleInput}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
                   placeholder="Ask anything..."
-                  className="w-full resize-none bg-transparent outline-none text-[15px] leading-[1.65] font-['Geist'] text-[#09090b] dark:text-[#fafafa] placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] min-h-[32px] max-h-[128px] caret-[#f97316] tracking-[-0.01em]"
+                  className="block w-full resize-none overflow-hidden bg-transparent outline-none text-[15px] leading-[1.65] font-['Geist'] text-[#09090b] dark:text-[#fafafa] placeholder:text-[#a1a1aa] dark:placeholder:text-[#52525b] min-h-[32px] max-h-[128px] caret-[#f97316] tracking-[-0.01em]"
                   disabled={isStreaming || isThinking}
                   rows={1}
                 />
@@ -1005,12 +1056,20 @@ export default function Playground() {
                 
                 {/* Send Button */}
                 <button 
-                  onClick={() => handleSubmit()} 
-                  disabled={!canSend} 
-                  className={`ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${canSend ? "bg-[#09090b] dark:bg-[#fafafa] text-white dark:text-[#09090b] shadow-md hover:scale-105 cursor-pointer border-none" : "bg-[#f4f4f5] dark:bg-[#27272a] text-[#a1a1aa] dark:text-[#52525b] border border-black/5 dark:border-white/10 cursor-default"}`}
+                  type="button"
+                  onClick={handleComposerAction}
+                  disabled={!isStreaming && !canSend}
+                  aria-label={isStreaming ? 'Stop streaming response' : 'Send prompt'}
+                  className={`ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all ${
+                    isStreaming
+                      ? "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.36)] hover:scale-105 cursor-pointer border-none"
+                      : canSend
+                        ? "bg-[#09090b] dark:bg-[#fafafa] text-white dark:text-[#09090b] shadow-md hover:scale-105 cursor-pointer border-none"
+                        : "bg-[#f4f4f5] dark:bg-[#27272a] text-[#a1a1aa] dark:text-[#52525b] border border-black/5 dark:border-white/10 cursor-default"
+                  }`}
                 >
                   {isStreaming || isThinking 
-                    ? <div className="w-4 h-4 border-[2px] border-current border-t-transparent rounded-full animate-[spin_0.7s_linear_infinite]" />
+                    ? <Square className="w-4 h-4 fill-current" />
                     : <ArrowUp className="w-5 h-5 stroke-[2.5]" />
                   }
                 </button>
@@ -1028,8 +1087,6 @@ export default function Playground() {
         isThinking={isThinking} 
         model={inputMode === "text" ? "sarvam-m" : "saaras:v3"} 
         mode={inputMode} 
-        error={error} 
-        onClearError={() => {/* Hook doesn't provide clear error natively, usually clears on next request */}} 
       />
     </div>
   );
