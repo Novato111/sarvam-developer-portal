@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Sarvam Developer Portal",
   description: "Frontend Intern Assignment",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
