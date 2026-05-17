@@ -295,7 +295,7 @@ const CHIPS = [
   {
     label: "Essay test",
     hint: "Simple writing",
-    prompt: "Write a short essay about the importance of clean energy.",
+    prompt: "Generate a short, well-structured essay on the importance of clean energy using markdown, with a bolded title, introduction, body points, and conclusion.",
   },
   {
     label: "Quick summary",
