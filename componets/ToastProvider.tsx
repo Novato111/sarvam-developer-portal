@@ -77,7 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div
-        className="fixed bottom-4 right-4 z-[100] flex w-[calc(100vw-2rem)] max-w-[380px] flex-col gap-2 sm:bottom-5 sm:right-5"
+        className="fixed bottom-3 right-3 z-[100] flex w-[calc(100vw-1.5rem)] max-w-[232px] flex-col gap-1.5 sm:bottom-4 sm:right-4"
         aria-live="polite"
         aria-relevant="additions text"
       >
@@ -113,15 +113,15 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   return (
     <div
       role={toast.variant === 'destructive' ? 'alert' : 'status'}
-      className={`group relative isolate overflow-hidden rounded-[12px] border p-3 pr-9 shadow-[0_18px_45px_rgba(15,23,42,0.13)] backdrop-blur-xl animate-[toastIn_0.22s_cubic-bezier(0.16,1,0.3,1)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.38)] ${variantStyles[toast.variant]}`}
+      className={`group relative isolate overflow-hidden rounded-md border px-2.5 py-2 pr-7 shadow-[0_10px_26px_rgba(15,23,42,0.12)] backdrop-blur-md animate-[toastIn_0.22s_cubic-bezier(0.16,1,0.3,1)] dark:shadow-[0_12px_28px_rgba(0,0,0,0.34)] ${variantStyles[toast.variant]}`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.55),transparent_42%)] opacity-80 dark:opacity-10" />
-      <div className="relative z-10 flex gap-2.5">
-        <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${iconStyles[toast.variant]}`} />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.45),transparent)] opacity-60 dark:opacity-10" />
+      <div className="relative z-10 flex gap-2">
+        <Icon className={`mt-[3px] h-3.5 w-3.5 shrink-0 ${iconStyles[toast.variant]}`} />
         <div className="min-w-0">
-          <div className="text-[13px] font-semibold leading-5 tracking-[-0.01em]">{toast.title}</div>
+          <div className="truncate text-[12px] font-semibold leading-4 tracking-normal">{toast.title}</div>
           {toast.description && (
-            <div className="mt-0.5 text-[12px] font-medium leading-5 tracking-[-0.01em] text-[#71717a]">
+            <div className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-4 tracking-normal text-[#71717a]">
               {toast.description}
             </div>
           )}
@@ -130,10 +130,10 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       <button
         type="button"
         onClick={() => onDismiss(toast.id)}
-        className="absolute right-2.5 top-2.5 z-20 grid h-6 w-6 place-items-center rounded-md text-[#a1a1aa] transition hover:bg-black/5 hover:text-[#09090b] dark:hover:bg-white/10 dark:hover:text-[#fafafa]"
+        className="absolute right-1.5 top-1.5 z-20 grid h-5 w-5 place-items-center rounded text-[#a1a1aa] transition hover:bg-black/5 hover:text-[#09090b] dark:hover:bg-white/10 dark:hover:text-[#fafafa]"
         aria-label="Dismiss notification"
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-3 w-3" />
       </button>
     </div>
   );
