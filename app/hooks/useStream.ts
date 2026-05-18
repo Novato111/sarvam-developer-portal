@@ -27,6 +27,8 @@ export function useStream() {
     let localTokenCount = 0;
     let fullText = '';
     let pendingText = '';
+    let streamBuffer = '';
+    const visibleTextFilter = createHiddenReasoningFilter();
     let animationFrameId: number | null = null;
     setMetrics({ tokenCount: 0, startTime });
 
@@ -71,8 +73,11 @@ export function useStream() {
         
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const extractedText = parseSSEChunk(chunk); 
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split(/\r?\n/);
+        streamBuffer = lines.pop() ?? '';
+
+        const extractedText = visibleTextFilter.push(parseSSELines(lines)); 
         if (extractedText) {
              fullText += extractedText;
              pendingText += extractedText;
@@ -80,6 +85,24 @@ export function useStream() {
              localTokenCount += extractedText.trim() ? extractedText.trim().split(/\s+/).length : 0;
              scheduleFlush();
         }
+      }
+
+      if (streamBuffer) {
+        const extractedText = visibleTextFilter.push(parseSSELines([streamBuffer]));
+        if (extractedText) {
+          fullText += extractedText;
+          pendingText += extractedText;
+          localTokenCount += extractedText.trim() ? extractedText.trim().split(/\s+/).length : 0;
+          flushPendingText();
+        }
+      }
+
+      const finalText = visibleTextFilter.flush();
+      if (finalText) {
+        fullText += finalText;
+        pendingText += finalText;
+        localTokenCount += finalText.trim() ? finalText.trim().split(/\s+/).length : 0;
+        flushPendingText();
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
@@ -117,20 +140,73 @@ export function useStream() {
   return { output, setOutput, isStreaming, error, metrics, startStream, stopStream };
 }
 
-// Sarvam streams chat chunks as SSE data lines, so we pull out only the delta text.
-function parseSSEChunk(chunk: string): string {
-    const lines = chunk.split('\n').filter(line => line.trim() !== '');
+function parseSSELines(lines: string[]): string {
     let text = '';
-    for (const line of lines) {
-        if (line.includes('[DONE]')) return text;
-        if (line.startsWith('data: ')) {
+    for (const line of lines.filter(line => line.trim() !== '')) {
+        const trimmed = line.trim();
+        if (trimmed.includes('[DONE]')) return text;
+        if (trimmed.startsWith('data:')) {
             try {
-                const data = JSON.parse(line.slice(6));
+                const data = JSON.parse(trimmed.slice(5).trim());
                 text += data.choices[0]?.delta?.content || '';
             } catch {
-                // Ignore parse errors on incomplete chunks
+                // Incomplete chunks stay in the stream buffer until the next read.
             }
         }
     }
     return text;
+}
+
+function createHiddenReasoningFilter() {
+  let pending = '';
+  let insideHiddenBlock = false;
+
+  const push = (chunk: string) => {
+    if (!chunk) return '';
+
+    pending += chunk;
+    let visible = '';
+
+    while (pending) {
+      if (insideHiddenBlock) {
+        const closeIndex = pending.toLowerCase().indexOf('</think>');
+        if (closeIndex === -1) {
+          pending = pending.slice(Math.max(0, pending.length - 7));
+          return visible;
+        }
+
+        pending = pending.slice(closeIndex + 8);
+        insideHiddenBlock = false;
+        continue;
+      }
+
+      const openIndex = pending.toLowerCase().indexOf('<think>');
+      if (openIndex === -1) {
+        const keepLength = Math.min(6, pending.length);
+        visible += pending.slice(0, pending.length - keepLength);
+        pending = pending.slice(pending.length - keepLength);
+        return visible;
+      }
+
+      visible += pending.slice(0, openIndex);
+      pending = pending.slice(openIndex + 7);
+      insideHiddenBlock = true;
+    }
+
+    return visible;
+  };
+
+  const flush = () => {
+    if (insideHiddenBlock) {
+      pending = '';
+      insideHiddenBlock = false;
+      return '';
+    }
+
+    const visible = pending;
+    pending = '';
+    return visible;
+  };
+
+  return { push, flush };
 }

@@ -45,7 +45,7 @@ function isMarkdownBlockStart(line: string) {
 
 // This renderer handles the small Markdown subset model answers usually use.
 function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const lines = normalizeMarkdownContent(markdown).replace(/\r\n/g, '\n').split('\n');
   const blocks: MarkdownBlock[] = [];
   let index = 0;
 
@@ -125,6 +125,25 @@ function parseMarkdownBlocks(markdown: string): MarkdownBlock[] {
   return blocks;
 }
 
+function normalizeMarkdownContent(markdown: string) {
+  let normalized = markdown.trim().replace(/\u200B/g, '');
+
+  const escapedLineBreakCount = (normalized.match(/\\n/g) ?? []).length;
+  const realLineBreakCount = (normalized.match(/\n/g) ?? []).length;
+  if (escapedLineBreakCount > realLineBreakCount) {
+    normalized = normalized.replace(/\\n/g, '\n');
+  }
+
+  const wrappedMarkdown = normalized.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/i);
+  if (wrappedMarkdown) normalized = wrappedMarkdown[1].trim();
+
+  if (/^```(?:markdown|md)\s*\n/i.test(normalized)) {
+    normalized = normalized.replace(/^```(?:markdown|md)\s*\n/i, '').replace(/\n```$/i, '').trim();
+  }
+
+  return normalized;
+}
+
 function safeHref(href: string) {
   const trimmed = href.trim();
   if (/^(https?:|mailto:|\/)/.test(trimmed)) return trimmed;
@@ -132,6 +151,7 @@ function safeHref(href: string) {
 }
 
 function renderInlineMarkdown(text: string, keyPrefix = 'inline'): ReactNode[] {
+  text = text.replace(/\\([#*_`[\]()])/g, '$1');
   const nodes: ReactNode[] = [];
   let index = 0;
   let textBuffer = '';
@@ -953,30 +973,43 @@ export default function Playground() {
             <IdleHero onChip={sendPrompt} />
           ) : (
             <div className="flex flex-col gap-4 max-w-4xl mx-auto w-full pb-6">
-              {messages.map((m, i) => {
-                const isLastStreaming = isStreaming && i === messages.length - 1;
-                if (m.role === 'user') {
-                  return (
-                    <div key={m.id} className="flex gap-2 flex-row-reverse items-start animate-[fadeUp_0.18s_ease]">
-                      <div className="w-[26px] h-[26px] rounded-full shrink-0 bg-[linear-gradient(135deg,#2563eb,#f97316)] flex items-center justify-center shadow-sm">
-                        <span className="font-['Geist'] text-[9px] font-semibold text-white">U</span>
-                      </div>
-                      <div className="max-w-[86%] break-words bg-[#f4f4f5] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[12px_12px_3px_12px] px-[14px] py-[9px] text-[14px] leading-[1.7] text-[#09090b] dark:text-[#fafafa] font-['Geist'] tracking-[-0.01em] shadow-sm sm:max-w-[76%]">
-                        {m.content}
-                      </div>
-                    </div>
-                  );
-                }
-                if (isLastStreaming) return <ThinkingPersona key={m.id} state={personaState} streamedText={m.content} />;
-                return (
-                  <div key={m.id} className="flex gap-2 items-start animate-[fadeUp_0.18s_ease]">
-                    <PersonaAvatar state="idle" size={26} />
-                    <div className="max-w-[86%] break-words py-[2px] font-['Geist'] sm:max-w-[78%]">
-                      <AssistantMarkdown content={m.content} />
-                    </div>
-                  </div>
-                );
-              })}
+            {messages.map((m, i) => {
+  const isLastMessage = i === messages.length - 1;
+  const isLastStreaming = isStreaming && isLastMessage;
+
+  // 1. Handle User Messages
+  if (m.role === 'user') {
+    return (
+      <div key={m.id} className="flex gap-2 flex-row-reverse items-start animate-[fadeUp_0.18s_ease]">
+        <div className="w-[26px] h-[26px] rounded-full shrink-0 bg-[linear-gradient(135deg,#2563eb,#f97316)] flex items-center justify-center shadow-sm">
+          <span className="font-['Geist'] text-[9px] font-semibold text-white">U</span>
+        </div>
+        <div className="max-w-[86%] break-words bg-[#f4f4f5] dark:bg-[#18181b] border border-black/5 dark:border-white/10 rounded-[12px_12px_3px_12px] px-[14px] py-[9px] text-[14px] leading-[1.7] text-[#09090b] dark:text-[#fafafa] font-['Geist'] tracking-[-0.01em] shadow-sm sm:max-w-[76%]">
+          {m.content}
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Handle the Active/Streaming Message
+  if (isLastStreaming) return <ThinkingPersona key={m.id} state={personaState} streamedText={m.content} />;
+
+  // 3. Handle Past Assistant Messages
+  return (
+    <div key={m.id} className="flex gap-2 items-start animate-[fadeUp_0.18s_ease]">
+      {/* Conditionally render the avatar ONLY if it's the last message */}
+      {isLastMessage ? (
+        <PersonaAvatar state="idle" size={26} />
+      ) : (
+        /* Empty spacer to keep the text aligned with the latest message */
+        <div className="w-[26px] shrink-0" aria-hidden="true" /> 
+      )}
+      <div className="max-w-[86%] break-words py-[2px] font-['Geist'] sm:max-w-[78%]">
+        <AssistantMarkdown content={m.content} />
+      </div>
+    </div>
+  );
+})}
               <div ref={scrollRef} className="h-4" />
             </div>
           )}
