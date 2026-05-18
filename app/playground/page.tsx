@@ -279,13 +279,16 @@ const GlobalStyles = memo(function GlobalStyles() {
     @keyframes fadeUp     { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
     @keyframes slideIn    { from{opacity:0;transform:translateX(4px)} to{opacity:1;transform:translateX(0)} }
     @keyframes statusGlow { 0%,100%{opacity:0.5} 50%{opacity:1} }
-    @keyframes personaBreathe { 0%,100%{transform:translateY(0) scale(1); filter:saturate(1) contrast(1)} 48%{transform:translateY(-1px) scale(1.045); filter:saturate(1.08) contrast(1.02)} }
-    @keyframes personaThink { 0%,100%{transform:translateY(0) scale(1.02); filter:saturate(1.04)} 42%{transform:translateY(-1px) scale(1.105); filter:saturate(1.14)} }
-    @keyframes personaAura { 0%,100%{opacity:0.20; transform:scale(0.92)} 50%{opacity:0.42; transform:scale(1.16)} }
-    @keyframes personaRing { 0%,100%{opacity:0.38; transform:scale(0.96)} 50%{opacity:0.72; transform:scale(1.045)} }
+    @keyframes personaBreathe { 0%,100%{transform:translateY(0) scale(1); filter:saturate(1.02) contrast(1)} 46%{transform:translateY(-1.5px) scale(1.085); filter:saturate(1.18) contrast(1.04)} }
+    @keyframes personaThink { 0%,100%{transform:translateY(0) scale(1.04); filter:saturate(1.12)} 42%{transform:translateY(-2px) scale(1.18); filter:saturate(1.26) contrast(1.05)} }
+    @keyframes personaAura { 0%,100%{opacity:0.28; transform:scale(0.9)} 50%{opacity:0.66; transform:scale(1.34)} }
+    @keyframes personaSpill { 0%,100%{opacity:0.34; transform:scale(1) rotate(0deg)} 50%{opacity:0.7; transform:scale(1.18) rotate(16deg)} }
+    @keyframes personaRing { 0%,100%{opacity:0.42; transform:scale(0.95)} 50%{opacity:0.84; transform:scale(1.09)} }
     @keyframes personaFlow { 0%,100%{background-position:16% 22%} 50%{background-position:84% 74%} }
     @keyframes personaGrainShift { 0%,100%{background-position:0 0} 50%{background-position:7px 5px} }
     @keyframes personaGlimmer { 0%,100%{opacity:0.22; transform:translate3d(-5%, -4%, 0) scale(0.96)} 50%{opacity:0.38; transform:translate3d(5%, 4%, 0) scale(1.04)} }
+    @keyframes personaDepth { 0%,100%{transform:rotateX(8deg) rotateY(-10deg) translateZ(0)} 50%{transform:rotateX(-5deg) rotateY(12deg) translateZ(10px)} }
+    @keyframes personaSheen { 0%,100%{opacity:0.46; transform:translate3d(-18%, -18%, 18px) rotate(-18deg) scale(0.86)} 50%{opacity:0.72; transform:translate3d(8%, 5%, 24px) rotate(-18deg) scale(1.05)} }
     @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
   `}} />
   );
@@ -339,6 +342,9 @@ const personaGradient =
 
 const personaAuraGradient =
   'radial-gradient(circle at 24% 18%, rgba(137,169,70,0.40), transparent 44%), radial-gradient(circle at 78% 18%, rgba(128,145,236,0.34), transparent 46%), radial-gradient(circle at 68% 80%, rgba(229,118,82,0.38), transparent 48%)';
+
+const personaSpillGradient =
+  'conic-gradient(from 18deg, rgba(137,169,70,0.68), rgba(128,145,236,0.72), rgba(239,181,95,0.76), rgba(221,116,107,0.66), rgba(137,169,70,0.68))';
 
 const personaGrain =
   'radial-gradient(circle at 18% 24%, rgba(255,255,255,0.16) 0 0.35px, transparent 0.6px), radial-gradient(circle at 72% 34%, rgba(24,24,24,0.14) 0 0.35px, transparent 0.6px), radial-gradient(circle at 42% 76%, rgba(255,255,255,0.12) 0 0.35px, transparent 0.6px), radial-gradient(circle at 84% 82%, rgba(24,24,24,0.10) 0 0.35px, transparent 0.6px)';
@@ -454,19 +460,27 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
   const active = state === 'thinking' || state === 'streaming';
   const isLarge = size >= 48;
   const breathAnimation = active
-    ? 'personaThink 1.55s cubic-bezier(0.37,0,0.23,1) infinite'
-    : 'personaBreathe 4.9s cubic-bezier(0.37,0,0.23,1) infinite';
-  const auraAnimation = active ? 'personaAura 2.4s ease-in-out infinite' : 'personaAura 5.2s ease-in-out infinite';
+    ? 'personaThink 1.32s cubic-bezier(0.37,0,0.23,1) infinite'
+    : 'personaBreathe 3.9s cubic-bezier(0.37,0,0.23,1) infinite';
+  const auraAnimation = active ? 'personaAura 1.9s ease-in-out infinite' : 'personaAura 4.3s ease-in-out infinite';
+  const spillAnimation = active ? 'personaSpill 2.4s ease-in-out infinite' : 'personaSpill 5.6s ease-in-out infinite';
   const flowAnimation = active ? 'personaFlow 5.8s ease-in-out infinite' : 'personaFlow 9.5s ease-in-out infinite';
 
   return (
     <div
-      className="relative shrink-0 rounded-full"
-      style={{ width: size, height: size, animation: breathAnimation }}
+      className="relative shrink-0 rounded-full [perspective:900px]"
+      style={{ width: size, height: size, animation: breathAnimation, filter: active ? 'drop-shadow(0 14px 24px rgba(15,23,42,0.2))' : 'drop-shadow(0 10px 18px rgba(15,23,42,0.14))' }}
       aria-hidden="true"
     >
       <span
-        className={`pointer-events-none absolute rounded-full ${isLarge ? '-inset-1 opacity-55 blur-[3px]' : '-inset-2 blur-[7px]'}`}
+        className={`pointer-events-none absolute rounded-full ${isLarge ? '-inset-2 blur-[8px]' : '-inset-3 blur-[10px]'}`}
+        style={{
+          background: personaSpillGradient,
+          animation: spillAnimation,
+        }}
+      />
+      <span
+        className={`pointer-events-none absolute rounded-full ${isLarge ? '-inset-1.5 opacity-70 blur-[5px]' : '-inset-2.5 blur-[8px]'}`}
         style={{
           background: personaAuraGradient,
           animation: auraAnimation,
@@ -479,13 +493,14 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
       <span
         className={`relative block h-full w-full overflow-hidden rounded-full border border-white/70 dark:border-white/10 ${
           isLarge
-            ? 'shadow-[inset_0_1px_0_rgba(255,255,255,0.62),inset_0_-10px_16px_rgba(49,41,27,0.08),0_8px_18px_rgba(15,23,42,0.12)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.20),inset_0_-10px_16px_rgba(0,0,0,0.18),0_10px_20px_rgba(0,0,0,0.26)]'
-            : 'shadow-[inset_0_1px_0_rgba(255,255,255,0.54),inset_0_-12px_18px_rgba(49,41,27,0.10),0_9px_18px_rgba(15,23,42,0.10)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-12px_18px_rgba(0,0,0,0.24),0_10px_22px_rgba(0,0,0,0.28)]'
+            ? 'shadow-[inset_0_2px_3px_rgba(255,255,255,0.78),inset_-10px_-14px_24px_rgba(70,45,21,0.22),inset_9px_10px_22px_rgba(255,255,255,0.16),0_12px_22px_rgba(15,23,42,0.16)] dark:shadow-[inset_0_2px_3px_rgba(255,255,255,0.24),inset_-12px_-16px_26px_rgba(0,0,0,0.35),inset_9px_10px_22px_rgba(255,255,255,0.07),0_14px_26px_rgba(0,0,0,0.36)]'
+            : 'shadow-[inset_0_2px_3px_rgba(255,255,255,0.68),inset_-8px_-12px_22px_rgba(70,45,21,0.24),inset_7px_8px_18px_rgba(255,255,255,0.14),0_10px_20px_rgba(15,23,42,0.14)] dark:shadow-[inset_0_2px_3px_rgba(255,255,255,0.20),inset_-10px_-14px_24px_rgba(0,0,0,0.38),inset_7px_8px_18px_rgba(255,255,255,0.06),0_12px_24px_rgba(0,0,0,0.34)]'
         }`}
         style={{
           background: personaGradient,
           backgroundSize: isLarge ? '150% 150%' : '190% 190%',
-          animation: flowAnimation,
+          animation: `${flowAnimation}, personaDepth ${active ? '3.4s' : '6.4s'} ease-in-out infinite`,
+          transformStyle: 'preserve-3d',
         }}
       >
         <span
@@ -497,6 +512,11 @@ function PersonaAvatar({ state = 'idle', size = 28 }: { state?: PersonaAvatarSta
           className={`pointer-events-none absolute inset-[18%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.18),transparent_62%)] mix-blend-soft-light ${isLarge ? 'opacity-35' : 'opacity-55'}`}
           style={{ animation: 'personaGlimmer 6.2s ease-in-out infinite' }}
         />
+        <span
+          className="pointer-events-none absolute left-[10%] top-[8%] h-[42%] w-[56%] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62),rgba(255,255,255,0.22)_38%,transparent_70%)] blur-[1px] mix-blend-soft-light"
+          style={{ animation: `personaSheen ${active ? '3.2s' : '6s'} ease-in-out infinite` }}
+        />
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_72%_78%,rgba(30,20,12,0.24),transparent_46%)] mix-blend-multiply dark:bg-[radial-gradient(circle_at_72%_78%,rgba(0,0,0,0.34),transparent_50%)]" />
       </span>
     </div>
   );
