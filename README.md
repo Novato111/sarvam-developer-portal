@@ -1,239 +1,530 @@
-# Sarvam Developer Portal
+# ⚡ Sarvam Developer Portal
 
-A polished frontend assignment project for testing browser-based inference, inspecting streamed model responses, and comparing model outputs with a custom token-level diff view.
+<div align="center">
 
-Built with **Next.js**, **React**, **TypeScript**, **Tailwind CSS**, and Sarvam AI APIs.
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0B1020,50:3B82F6,100:8B5CF6&height=220&section=header&text=Sarvam%20Developer%20Portal&fontSize=42&fontColor=ffffff&animation=fadeIn&fontAlignY=38"/>
 
-## Overview
+### Enterprise AI Developer Experience Platform
 
-This portal is designed for the workflow described in the Frontend Intern Assignment:
+<p align="center">
+A modern AI-native developer portal built for conversational AI workflows, model experimentation, streaming inference, fleet deployment simulation, and enterprise-grade developer tooling.
+</p>
 
-- Test text and audio inference in a browser playground.
-- Stream model responses token by token.
-- Track live response metrics while the stream is active.
-- Compare two model outputs side by side.
-- Highlight token-level differences without using an external diff library.
-- Provide clear error states, keyboard-friendly controls, and accessible streamed output.
+<br/>
 
-## Live Links
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js&logoColor=white)
+![React](https://img.shields.io/badge/React-19-149ECA?style=for-the-badge&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)
+![Sarvam AI](https://img.shields.io/badge/Sarvam-AI-7C3AED?style=for-the-badge)
 
-- GitHub repository: `https://github.com/Novato111/sarvam-developer-portal`
-- Deployed app: add Vercel or Netlify link here
-- Video walkthrough: add walkthrough link here
+<br/>
 
-## Main Routes
+<img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=22&duration=3000&pause=1000&color=7C3AED&center=true&vCenter=true&width=900&lines=Streaming+AI+Developer+Workflows;Enterprise+Model+Experimentation;Voice+%2B+LLM+Integrated+Experiences;Fleet+Deployment+Simulation+Platform;AI+Native+Developer+Infrastructure"/>
 
-| Route | Purpose |
-|---|---|
-| `/playground` | Inference playground for text input, audio input, streaming responses, and live metrics |
-| `/diff-viewer` | Side-by-side comparison view for baseline and candidate model outputs |
-| `/documentation` | Short in-app guide for using the portal |
+</div>
 
-## Features
+---
 
-### Inference Playground
+# 🧠 Overview
 
-- Text prompt input with Enter to send and Shift + Enter for a new line.
-- Audio input using the browser microphone.
-- Model selector for text and voice modes.
-- Sarvam chat streaming through `fetch` and `ReadableStream`.
-- Live token counter, tokens-per-second, and elapsed time.
-- Stop streaming support with partial output preserved.
-- Markdown rendering for model responses.
-- Minimal toast system for errors and status updates.
+Sarvam Developer Portal is a production-style AI platform experience designed around modern enterprise AI workflows.
 
-### Model Output Diff View
+The platform combines:
 
-- Compare a baseline model response with a candidate model response.
-- Sample mode for reliable local test cases.
-- Live mode for comparing real model outputs from the API.
-- Token-level highlighting for added and removed tokens.
-- Clean text toggle for viewing each response without highlights.
-- Compact metrics summary for match rate, added tokens, removed tokens, unchanged tokens, and algorithm info.
+- Conversational AI streaming
+- Real-time voice transcription
+- AI response comparison systems
+- Fleet deployment simulation
+- Interactive developer documentation
+- Enterprise-grade UI architecture
 
-### Documentation
+Built entirely with the **Next.js App Router ecosystem**, the project demonstrates how modern AI-native applications can deliver highly interactive developer tooling experiences with low-latency streaming infrastructure and scalable frontend architecture.
 
-- Simple usage guide inside the app.
-- Quick links to the playground and diff viewer.
-- Step-by-step instructions for the main workflows.
-- Notes on metrics, audio, errors, and keyboard access.
+---
 
-## Tech Stack
+# ✨ Core Capabilities
 
-- Next.js `16`
-- React `19`
+<table>
+<tr>
+<td width="50%">
+
+## ⚡ Streaming AI Playground
+
+Real-time conversational AI interface powered by:
+- Streaming completions
+- Edge runtime APIs
+- Incremental token rendering
+- Voice + text workflows
+- Custom markdown rendering
+
+</td>
+<td width="50%">
+
+## 🎙 Voice Transcription Pipeline
+
+Integrated speech-to-text workflows using:
+- Audio recording hooks
+- Multipart uploads
+- Sarvam speech APIs
+- Real-time transcription pipelines
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+## 🧠 AI Diff Comparison Engine
+
+Advanced side-by-side AI response comparison system featuring:
+- Semantic diff visualization
+- Token-level highlighting
+- Streaming response analysis
+- Comparative prompt experimentation
+
+</td>
+<td width="50%">
+
+## 🚀 Fleet Deployment Simulation
+
+Enterprise-style model deployment dashboard supporting:
+- Device fleet monitoring
+- Model rollout simulation
+- Status tracking
+- Multi-region deployment workflows
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+## 📚 Interactive Developer Documentation
+
+Rich documentation experience with:
+- Dynamic layouts
+- Interactive navigation
+- Developer-focused UX
+- Design-system consistency
+
+</td>
+<td width="50%">
+
+## 🎨 Enterprise UI Architecture
+
+Modern UI stack featuring:
+- Glassmorphism-inspired design
+- Dark/light theme support
+- Responsive interaction systems
+- Memoized rendering optimizations
+
+</td>
+</tr>
+</table>
+
+---
+
+# 🏗 System Architecture
+
+```mermaid
+flowchart LR
+
+A[🖥 Next.js Frontend]
+B[⚡ Edge Runtime APIs]
+C[🧠 Sarvam AI APIs]
+D[🎙 Speech-to-Text Pipeline]
+E[📡 Streaming SSE Responses]
+F[🚀 Fleet Deployment UI]
+
+A --> B
+B --> C
+B --> D
+C --> E
+A --> F
+```
+
+---
+
+# 🧰 Technology Stack
+
+## Frontend Platform
+
+- Next.js 16
+- React 19
 - TypeScript
-- Tailwind CSS `4`
-- next-themes
-- lucide-react
-- Sarvam AI chat and speech-to-text APIs
+- Tailwind CSS v4
+- Lucide React Icons
 
-## Getting Started
+## AI Infrastructure
 
-### Prerequisites
+- Sarvam AI Chat APIs
+- Streaming Completion APIs
+- Speech-to-Text APIs
+- Edge Runtime APIs
 
-- Node.js `20.9` or newer
-- npm
-- Sarvam API key
+## Developer Experience
 
-### 1. Install dependencies
+- App Router Architecture
+- Client-side Streaming Hooks
+- Audio Recording Pipelines
+- Incremental Rendering Systems
+
+## UI Engineering
+
+- Theme Switching
+- Memoized Components
+- Custom Markdown Renderer
+- Responsive Layout Systems
+
+---
+
+# ⚡ Platform Modules
+
+---
+
+# 🎮 AI Playground
+
+### `/playground`
+
+The central conversational AI workspace for interacting with streaming LLM responses.
+
+### Features
+
+- Real-time AI token streaming
+- Voice input integration
+- Custom markdown rendering
+- Keyboard-first workflows
+- Dark/light theme support
+- Streaming lifecycle management
+
+### Engineering Highlights
+
+- Built with client-side streaming hooks
+- Uses Edge Runtime for low-latency inference
+- Implements incremental rendering pipelines
+- Optimized with memoization and hydration-safe patterns
+
+---
+
+# 🧠 Diff Viewer
+
+### `/diff-viewer`
+
+A specialized AI output comparison workspace designed for prompt experimentation and model evaluation.
+
+### Features
+
+- Token-level semantic diffing
+- Multi-output comparison
+- AI response evaluation
+- Prompt experimentation tooling
+
+### Engineering Highlights
+
+- Custom diff algorithm implementation
+- Interactive visualization system
+- Efficient token comparison rendering
+- Optimized reconciliation workflows
+
+---
+
+# 🚀 Fleet Deployment Dashboard
+
+### `/fleet-deploy`
+
+An enterprise-inspired deployment simulation interface for managing distributed AI model rollouts.
+
+### Features
+
+- Fleet health monitoring
+- Deployment rollout simulation
+- Device status tracking
+- Multi-version deployment visualization
+
+### Engineering Highlights
+
+- Stateful deployment workflows
+- Real-time UI state transitions
+- Operational dashboard architecture
+- Enterprise deployment UX patterns
+
+---
+
+# 📚 Documentation System
+
+### `/documentation`
+
+Interactive developer documentation experience designed around enterprise API platforms.
+
+### Features
+
+- Dynamic navigation systems
+- Rich UI presentation
+- Developer-first information architecture
+- Interactive learning experience
+
+---
+
+# 🔌 API Infrastructure
+
+---
+
+# `/api/chat`
+
+### Streaming AI Completion API
+
+Handles real-time conversational AI streaming using Sarvam AI.
+
+### Features
+
+- Streaming responses
+- Edge Runtime execution
+- SSE-compatible architecture
+- Incremental token delivery
+
+### Highlights
+
+```ts
+runtime = 'edge'
+stream: true
+```
+
+Optimized for low-latency AI inference experiences.
+
+---
+
+# `/api/transcribe`
+
+### Speech-to-Text API
+
+Processes voice recordings using Sarvam speech recognition APIs.
+
+### Features
+
+- Multipart file uploads
+- Audio transcription
+- Browser recording integration
+- Voice workflow support
+
+---
+
+# `/api/compare`
+
+### AI Comparison Engine
+
+Runs multi-output generation pipelines for comparative AI experimentation.
+
+### Features
+
+- Multi-response generation
+- Timeout handling
+- Stream aggregation
+- AI output reconciliation
+
+---
+
+# 🧠 Engineering Highlights
+
+## ⚡ Edge-Native Architecture
+
+The platform heavily leverages the Next.js Edge Runtime for ultra-low-latency AI interactions.
+
+## 🧩 Streaming-First Design
+
+Core user experiences are built around:
+- Incremental token rendering
+- Streaming lifecycle management
+- Real-time UX feedback loops
+
+## 🎙 Multimodal AI Workflows
+
+Combines:
+- Conversational AI
+- Voice interfaces
+- AI comparison systems
+- Interactive deployment tooling
+
+## 🏢 Enterprise UX Patterns
+
+The UI architecture mirrors modern enterprise AI tooling platforms with:
+- Dashboard-centric navigation
+- Operational visibility
+- Structured workflows
+- Contextual interactions
+
+---
+
+# 📁 Project Structure
+
+```bash
+sarvam-developer-portal/
+│
+├── app/
+│   ├── api/
+│   │   ├── chat/
+│   │   ├── compare/
+│   │   └── transcribe/
+│   │
+│   ├── playground/
+│   ├── diff-viewer/
+│   ├── documentation/
+│   ├── fleet-deploy/
+│   │
+│   ├── hooks/
+│   └── utils/
+│
+├── components/
+│
+├── public/
+│
+├── package.json
+└── README.md
+```
+
+---
+
+# 🚀 Quickstart
+
+## 1️⃣ Clone Repository
+
+```bash
+git clone <your-repo-url>
+
+cd sarvam-developer-portal
+```
+
+---
+
+# 2️⃣ Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Create environment file
+---
 
-Create `.env.local` in the project root:
+# 3️⃣ Configure Environment Variables
 
-```bash
-SARVAM_API_KEY=your_sarvam_api_key_here
+Create a `.env.local` file:
+
+```env
+SARVAM_API_KEY=your_api_key_here
 ```
 
-### 3. Run the development server
+---
 
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://127.0.0.1:3004
-```
-
-The app redirects to the playground flow.
-
-## Available Scripts
+# 4️⃣ Start Development Server
 
 ```bash
 npm run dev
 ```
 
-Starts the local Next.js development server.
+Application runs at:
 
 ```bash
-npm run lint
+http://localhost:3004
 ```
 
-Runs ESLint.
+---
+
+# 📊 Architectural Concepts Demonstrated
+
+```diff
++ Streaming AI Interfaces
++ Edge Runtime APIs
++ Voice AI Workflows
++ Real-Time Rendering
++ Enterprise Dashboard UX
++ AI Comparison Infrastructure
++ Client-Side Streaming Hooks
++ Token-Level Diff Systems
++ Operational Deployment Simulation
+```
+
+---
+
+# 🧪 Engineering Focus Areas
+
+<table>
+<tr>
+<td width="50%">
+
+### Frontend Systems
+- Streaming interfaces
+- Hydration-safe rendering
+- Client state management
+- UI performance optimization
+
+</td>
+<td width="50%">
+
+### AI Infrastructure
+- LLM integrations
+- Streaming APIs
+- Voice AI systems
+- Prompt experimentation
+
+</td>
+</tr>
+
+<tr>
+<td width="50%">
+
+### Platform Engineering
+- Edge execution
+- Deployment simulation
+- Operational tooling
+- API orchestration
+
+</td>
+<td width="50%">
+
+### UX Engineering
+- Enterprise workflows
+- Dashboard architectures
+- Interaction systems
+- Developer experience
+
+</td>
+</tr>
+</table>
+
+---
+
+# 🌌 Vision
+
+Sarvam Developer Portal explores the future of AI-native developer platforms by combining conversational interfaces, multimodal workflows, and operational tooling into a unified enterprise-grade experience.
+
+The project demonstrates how modern AI systems can move beyond simple chat interfaces into full-scale interactive developer ecosystems.
+
+---
+
+# 🤝 Contributing
 
 ```bash
-npx tsc --noEmit
+# Fork the repository
+
+# Create feature branch
+git checkout -b feature/amazing-feature
+
+# Commit changes
+git commit -m "Add amazing feature"
+
+# Push branch
+git push origin feature/amazing-feature
 ```
 
-Runs TypeScript validation.
+---
 
-```bash
-npm run build
-```
+# ⭐ Final Note
 
-Creates a production build.
+If you found this project interesting, consider giving it a ⭐ on GitHub.
 
-## Project Structure
+<div align="center">
 
-```text
-app/
-  api/
-    chat/route.ts          Streaming chat proxy for Sarvam chat completions
-    compare/route.ts       Parallel comparison calls with timeout handling
-    transcribe/route.ts    Audio transcription proxy
-  diff-viewer/page.tsx     Model output diff view
-  documentation/page.tsx   In-app usage guide
-  hooks/
-    useAudioRecord.ts      Browser recording and transcription flow
-    useStream.ts           Fetch + ReadableStream response handling
-  playground/page.tsx      Inference playground
-  utils/diffAlgorithm.ts   Custom token-level diff algorithm
+### ⚡ Built for the Future of AI Developer Infrastructure
 
-components/
-  Sidebar.tsx              App navigation and theme controls
-  ThemeProvider.tsx        Dark mode provider
-  ToastProvider.tsx        Minimal toast system
-```
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:8B5CF6,100:0B1020&height=140&section=footer"/>
 
-## Architecture Decisions
-
-The app keeps API keys on the server by routing browser requests through Next.js API routes. The frontend never calls Sarvam directly with the secret key.
-
-Streaming is handled in the client through `fetch`, `ReadableStream`, and a `TextDecoder`. Tokens are rendered as chunks arrive, so the UI does not wait for the full response before updating.
-
-The compare route runs both model calls in parallel. This keeps the diff view faster than waiting for one model response before requesting the second. A timeout is used so the UI does not hang if the API is slow.
-
-The UI is split into focused routes: playground for inference, diff viewer for comparison, and documentation for usage guidance. Shared shell behavior such as the sidebar, theme provider, and toast system lives in reusable components.
-
-## Diff Algorithm
-
-The diff view uses a custom token-level Longest Common Subsequence approach.
-
-1. Split both model outputs into tokens.
-2. Preserve whitespace tokens so the reconstructed output keeps readable spacing.
-3. Build a dynamic programming table for the longest common token sequence.
-4. Backtrack through the table to mark tokens as:
-   - `unchanged`
-   - `added`
-   - `removed`
-5. Render added and removed tokens with inline highlights.
-
-### Complexity
-
-If `n` is the number of tokens in the first response and `m` is the number of tokens in the second response:
-
-- Time complexity: `O(n * m)`
-- Space complexity: `O(n * m)`
-
-This is acceptable for short and medium model outputs, which matches the assignment workflow. For very large documents, a more memory-efficient algorithm would be needed.
-
-### Why This Approach
-
-LCS is simple, deterministic, and easy to explain. It works well when the goal is to clearly show which words stayed the same, which words were removed, and which words were added.
-
-Myers diff is more efficient for large text diffs, but it is more complex to implement and explain. Since the assignment focuses on model response comparison rather than large document diffing, the custom token-level LCS approach is a good fit.
-
-## Error Handling
-
-The app handles common failure cases with visible, minimal UI feedback:
-
-- Empty prompts are blocked.
-- Stream interruptions preserve partial output.
-- Manual stream stops show a toast instead of resetting the session.
-- Very short recordings are handled gracefully.
-- Transcription failures show a clear message.
-- Compare requests use timeout handling.
-- Copy failures show fallback guidance.
-
-## Accessibility
-
-Accessibility considerations included:
-
-- Keyboard-friendly inputs and buttons.
-- `aria-live="polite"` for streamed chat updates.
-- Screen-reader text for thinking and streaming states.
-- Clear labels for icon-only controls.
-- Toasts using status and alert roles.
-- Color choices checked against light and dark UI readability.
-
-## Known Limitations
-
-- The diff algorithm compares exact tokens, not semantic meaning.
-- The LCS implementation is not optimized for very large documents.
-- Token counting in the streaming playground is an estimate based on whitespace splitting.
-- Live comparison depends on external API latency and availability.
-- The custom model selector can be further improved with full arrow-key menu navigation.
-
-## Submission Notes
-
-Before final submission, add these links to the README and PDF:
-
-- Public GitHub repository link.
-- Deployed Vercel or Netlify link.
-- Three-minute video walkthrough link.
-
-Also include the PDF sections requested in the assignment:
-
-- Architecture decisions.
-- Diffing algorithm approach.
-- Time complexity analysis.
-- Accessibility considerations.
-- Error handling strategy.
-- Part B Q1 bug report.
+</div>
