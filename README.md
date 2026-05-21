@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0B1020,50:3B82F6,100:8B5CF6&height=220&section=header&text=Sarvam%20Developer%20Portal&fontSize=42&fontColor=ffffff&animation=fadeIn&fontAlignY=38"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:111827,40:F97316,75:D8B4FE,100:E0E7FF&height=220&section=header&text=Sarvam%20Developer%20Portal&fontSize=42&fontColor=ffffff&animation=fadeIn&fontAlignY=38"/>
 
 ### Enterprise AI Developer Experience Platform
 
