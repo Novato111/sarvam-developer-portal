@@ -16,6 +16,7 @@ export function useStream() {
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState({ tokenCount: 0, startTime: 0 });
+  
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const startStream = useCallback(async (input: string | StreamMessage[], callbacks?: StreamCallbacks) => {
@@ -24,10 +25,12 @@ export function useStream() {
     setOutput('');
 
     const startTime = performance.now();
+
     let localTokenCount = 0;
     let fullText = '';
     let pendingText = '';
     let streamBuffer = '';
+
     const visibleTextFilter = createHiddenReasoningFilter();
     let animationFrameId: number | null = null;
     setMetrics({ tokenCount: 0, startTime });
@@ -69,6 +72,7 @@ export function useStream() {
       const decoder = new TextDecoder('utf-8');
 
       while (true) {
+
         const { done, value } = await reader.read();
         
         if (done) break;
@@ -139,7 +143,8 @@ export function useStream() {
 
   return { output, setOutput, isStreaming, error, metrics, startStream, stopStream };
 }
-
+  // 'data: {"choices":[{"delta":{"content":"On"}}]}',
+  // ' datta' [done] 
 function parseSSELines(lines: string[]): string {
     let text = '';
     for (const line of lines.filter(line => line.trim() !== '')) {
@@ -156,6 +161,8 @@ function parseSSELines(lines: string[]): string {
     }
     return text;
 }
+
+
 
 function createHiddenReasoningFilter() {
   let pending = '';

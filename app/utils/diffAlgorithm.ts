@@ -7,6 +7,7 @@ export interface DiffToken {
 
 function tokenize(text: string): string[] {
   return text.split(/(\s+)/).filter((token) => token.length > 0);
+  
 }
 
 export function computeDiff(oldText: string, newText: string): DiffToken[] {
@@ -17,6 +18,7 @@ export function computeDiff(oldText: string, newText: string): DiffToken[] {
   const n = newTokens.length;
 
   // Keep the full LCS table so the backtrack can label every token.
+  
   const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {

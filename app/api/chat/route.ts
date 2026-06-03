@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         'Authorization': `Bearer ${process.env.SARVAM_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'sarvam-m',
+        model: 'sarvam-30b',
         messages,
         stream: true,
       }),
